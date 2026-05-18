@@ -5,12 +5,45 @@ import { PhonePreview } from "@/components/dashboard/PhonePreview"
 import { Button } from "@/components/ui/Button"
 import Link from "next/link"
 import { Eye, ExternalLink, LayoutDashboard } from "lucide-react"
-import { DashboardProvider } from "@/context/DashboardContext"
+import { DashboardProvider, useDashboardContext } from "@/context/DashboardContext"
+import { useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function DashboardPage() {
   return (
     <DashboardProvider>
-      <div className="flex h-screen flex-col bg-page text-primary overflow-hidden relative font-sans selection:bg-accent/30">
+      <DashboardContent />
+    </DashboardProvider>
+  )
+}
+
+function DashboardContent() {
+  const { config } = useDashboardContext()
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleDeploy = async () => {
+    setIsSaving(true)
+    try {
+      const res = await fetch('/api/save-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        alert('Successfully deployed!')
+      } else {
+        alert('Deploy failed: ' + data.error)
+      }
+    } catch (err) {
+      alert('An error occurred during deploy.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex h-screen flex-col bg-page text-primary overflow-hidden relative font-sans selection:bg-accent/30">
       {/* Subtle background radial highlight */}
       <div className="absolute top-0 left-0 w-full h-[500px] pointer-events-none overflow-hidden z-0 opacity-40">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-accent/10 blur-[100px] rounded-full"></div>
@@ -29,9 +62,9 @@ export default function DashboardPage() {
           <div className="h-4 w-px bg-border-subtle hidden sm:block"></div>
           
           <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-secondary bg-elevated/50 px-2.5 py-1 rounded-full border border-border-subtle">
-            <span>folio.in/</span>
-            <span className="text-primary font-semibold">username</span>
-            <a href="#" className="text-tertiary hover:text-white transition-colors ml-0.5">
+            <span>folio.com/</span>
+            <span className="text-primary font-semibold">{config.name?.toLowerCase().replace(/\s+/g, '') || 'username'}</span>
+            <a href={`/${config.name?.toLowerCase().replace(/\s+/g, '') || 'username'}`} target="_blank" className="text-tertiary hover:text-white transition-colors ml-0.5">
               <ExternalLink className="w-3 h-3" />
             </a>
           </div>
@@ -43,15 +76,32 @@ export default function DashboardPage() {
             Changes saved
           </div>
           
-          <Link href="/preview" className="hidden md:block">
+          <Link href={`/${config.name?.toLowerCase().replace(/\s+/g, '') || 'username'}`} target="_blank" className="hidden md:block">
             <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs border border-transparent hover:border-border-subtle font-medium">
               <Eye className="w-3.5 h-3.5" />
-              View live
+              View preview
             </Button>
           </Link>
           
-          <Button size="sm" className="h-8 px-4 text-xs font-semibold shadow-lg shadow-accent/20 tracking-wide bg-accent hover:brightness-110 transition-all hover:scale-[1.02]">
-            DEPLOY
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 text-xs text-secondary hover:text-white"
+            onClick={async () => {
+              await supabase.auth.signOut()
+              window.location.href = '/'
+            }}
+          >
+            Log out
+          </Button>
+
+          <Button 
+            size="sm" 
+            onClick={handleDeploy}
+            disabled={isSaving}
+            className="h-8 px-4 text-xs font-semibold shadow-lg shadow-accent/20 tracking-wide bg-accent hover:brightness-110 transition-all hover:scale-[1.02]"
+          >
+            {isSaving ? 'SAVING...' : 'DEPLOY'}
           </Button>
         </div>
       </header>
@@ -93,6 +143,5 @@ export default function DashboardPage() {
         </Button>
       </div>
     </div>
-    </DashboardProvider>
   )
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { supabaseAdmin } from "@/lib/supabaseServer"
 
 export async function POST(req: Request) {
   try {
@@ -9,17 +10,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Server-side logging for now. In a real app, we'd insert into Supabase:
-    // if (type === 'view') {
-    //   await supabase.from('page_views').insert({ profile_id, source, country })
-    // } else if (type === 'click') {
-    //   await supabase.from('link_clicks').insert({ profile_id, link_type })
-    // }
+    if (type === 'view') {
+      const { error } = await supabaseAdmin.from('page_views').insert({ 
+        profile_id, 
+        source: source || 'direct', 
+        country: country || 'unknown' 
+      })
+      if (error) throw error
+    } else if (type === 'click') {
+      const { error } = await supabaseAdmin.from('link_clicks').insert({ 
+        profile_id, 
+        link_type: link_type || 'other' 
+      })
+      if (error) throw error
+    }
 
     console.log(`[Analytics] Tracked ${type} for profile ${profile_id}`)
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  } catch (error: any) {
+    console.error('Analytics error:', error)
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 })
   }
 }

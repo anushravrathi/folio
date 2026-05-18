@@ -60,7 +60,7 @@ export function SpotifyWidget({
   }
 
   return (
-    <div className="w-full h-full flex flex-col justify-center rounded-[28px] overflow-hidden shadow-[0_20px_50px_-12px_rgba(29,185,84,0.2)] bg-gradient-to-br from-[#003D6B] to-[#001E36] border border-white/10 group transition-all duration-500 hover:scale-[1.02]">
+    <div className="w-full h-[180px] flex flex-col justify-center rounded-[20px] overflow-hidden bg-[#0A0A0A] border border-white/5 group transition-all duration-500 hover:border-white/10">
       <div className="p-5 sm:p-6 h-full flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -75,11 +75,11 @@ export function SpotifyWidget({
 
           <div className="flex gap-4 items-center">
             <div className="relative shrink-0">
-              <div className={`w-20 h-20 rounded-xl overflow-hidden bg-[#001E36] shadow-xl relative group/art`}>
+              <div className={`w-16 h-16 rounded-xl overflow-hidden bg-[#111] shadow-xl relative group/art`}>
                  {albumArtUrl ? (
                    <img src={albumArtUrl} alt={trackName} className="absolute inset-0 w-full h-full object-cover" />
                  ) : (
-                   <div className="absolute inset-0 bg-gradient-to-tr from-purple-500 to-pink-400 animate-pulse duration-[4s]"></div>
+                   <div className="absolute inset-0 bg-gradient-to-tr from-[#222] to-[#333] animate-pulse duration-[4s]"></div>
                  )}
                  {isPlaying && (
                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
@@ -94,33 +94,21 @@ export function SpotifyWidget({
             </div>
 
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold text-white tracking-tight truncate leading-tight">{trackName}</h3>
-              <p className="text-xs text-[#A4C5E0] font-medium truncate mb-1">{artistName}</p>
-              <div className="text-[9px] font-extrabold text-[#1DB954] bg-[#1DB954]/10 w-fit px-2 py-0.5 rounded">LIVE</div>
+              <h3 className="text-[15px] font-bold text-white tracking-wide truncate leading-tight">{trackName}</h3>
+              <p className="text-[13px] text-tertiary font-medium truncate mb-1">{artistName}</p>
             </div>
           </div>
         </div>
 
-        <div className="mt-5">
-          <div className="space-y-1.5 mb-4">
-             <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+        <div className="mt-4">
+          <div className="space-y-1.5 mb-2">
+             <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-white rounded-full transition-all duration-1000 ease-linear" style={{ width: `${progress}%` }}></div>
              </div>
-             <div className="flex justify-between text-[10px] font-bold text-white/60 tabular-nums">
+             <div className="flex justify-between text-[10px] font-bold text-tertiary tabular-nums">
                 <span>{formatTime(currentSeconds)}</span>
                 <span>{formatTime(totalSeconds)}</span>
              </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-5">
-            <button className="text-white/60 hover:text-white transition-colors"><SkipBack className="w-4 h-4 fill-current" /></button>
-            <button 
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#001E36] shadow-lg hover:scale-105 active:scale-95 transition-transform"
-            >
-              {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
-            </button>
-            <button className="text-white/60 hover:text-white transition-colors"><SkipForward className="w-4 h-4 fill-current" /></button>
           </div>
         </div>
       </div>

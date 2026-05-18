@@ -1,6 +1,6 @@
 "use client"
-
-import React, { createContext, useContext, useState } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
+import { supabase } from "@/lib/supabaseClient"
 
 export interface Experience {
   company: string
@@ -19,6 +19,8 @@ export interface Project {
 }
 
 interface DashboardConfig {
+  id?: string
+  isPro?: boolean
   theme: 'default' | 'emerald' | 'sunset' | 'rose'
   name: string
   title: string
@@ -67,6 +69,8 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
 const defaultInitialState: DashboardConfig = {
+    id: "00000000-0000-0000-0000-000000000000", // Default empty UUID
+    isPro: false,
     theme: 'default',
     name: "Alex Developer",
     title: "Full Stack Engineer",
@@ -118,16 +122,79 @@ const defaultInitialState: DashboardConfig = {
   const [config, setConfig] = useState<DashboardConfig>(defaultInitialState)
   const [isLoaded, setIsLoaded] = useState(false)
 
-  React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem("folio_dashboard_config")
-      if (saved) {
-        setConfig(JSON.parse(saved))
+  useEffect(() => {
+    const fetchUserAndProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        // Try to load from Supabase
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*, projects(*), experience(*), skills(*), social_links(*)')
+          .eq('id', user.id)
+          .single()
+
+        if (profile) {
+          setConfig({
+            id: profile.id,
+            isPro: profile.is_pro,
+            theme: profile.theme || 'default',
+            name: profile.full_name || "New User",
+            title: profile.title || "",
+            location: profile.location || "",
+            bio: profile.about || "",
+            avatarUrl: profile.avatar_url || "",
+            openToWork: profile.open_to_work,
+            showGithubActivity: true,
+            githubUsername: profile.social_links?.github || "",
+            leetcodeUsername: profile.social_links?.leetcode || "",
+            spotifyTrackUrl: "",
+            spotifyData: null,
+            socialLinks: {
+              github: profile.social_links?.github || "",
+              linkedin: profile.social_links?.linkedin || "",
+              twitter: profile.social_links?.twitter || "",
+            },
+            education: {
+              degree: "",
+              school: "",
+              cgpa: "",
+              year: "",
+            },
+            skills: profile.skills?.map((s: any) => s.name) || [],
+            experiences: profile.experience?.map((ex: any) => ({
+              company: ex.company_name,
+              role: ex.role,
+              startMonth: ex.start_month,
+              endMonth: ex.end_month,
+              isCurrent: ex.is_current,
+              description: ex.description,
+            })) || [],
+            projects: profile.projects?.map((p: any) => ({
+              name: p.name,
+              description: p.description,
+              link: p.live_url,
+              isDeployed: p.is_deployed,
+            })) || [],
+          })
+        } else {
+          // New user, just set the ID
+          updateConfig({ id: user.id })
+        }
+      } else {
+        // Fallback to localStorage for guests
+        try {
+          const saved = localStorage.getItem("folio_dashboard_config")
+          if (saved) {
+            setConfig(JSON.parse(saved))
+          }
+        } catch (e) {
+          console.error("Failed to load config from local storage", e)
+        }
       }
-    } catch (e) {
-      console.error("Failed to load config from local storage", e)
+      setIsLoaded(true)
     }
-    setIsLoaded(true)
+
+    fetchUserAndProfile()
   }, [])
 
   React.useEffect(() => {

@@ -3,9 +3,11 @@ import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { Check, Copy } from "lucide-react"
+import { useDashboardContext } from "@/context/DashboardContext"
 
 export function SettingsTab() {
-  const isPro = false // Mock state
+  const { config, updateConfig } = useDashboardContext()
+  const isPro = config.isPro || false
 
   return (
     <div className="space-y-6">
@@ -76,7 +78,24 @@ export function SettingsTab() {
               </p>
             </div>
             {!isPro && (
-              <Button size="sm">Upgrade — ₹499</Button>
+              <Button 
+                size="sm" 
+                onClick={async () => {
+                  const res = await fetch('/api/mock-upgrade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: config.id }),
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    updateConfig({ isPro: true });
+                  } else {
+                    alert('Upgrade failed: ' + data.error);
+                  }
+                }}
+              >
+                Upgrade — ₹499
+              </Button>
             )}
           </div>
         </CardContent>

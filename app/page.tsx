@@ -102,7 +102,7 @@ export default function LandingPage() {
                   Log In
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="/signup">
                 <Button variant="primary" size="sm" className="rounded-xl text-xs font-bold px-5 h-9 shadow-glow">
                   Sign Up
                 </Button>
@@ -197,7 +197,7 @@ export default function LandingPage() {
                 className="pl-1 pr-3 h-12 sm:h-14 text-[16px] font-semibold bg-transparent border-0 shadow-none text-white focus:ring-0 placeholder:opacity-40 flex-1 w-full min-w-0"
               />
               <Link
-                href="/login"
+                href="/signup"
                 className="h-11 sm:h-12 px-6 sm:px-8 rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2 shrink-0 shadow-lg bg-white text-black hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all border-0"
               >
                 Claim URL <ArrowRight className="w-4 h-4 stroke-[3]" />

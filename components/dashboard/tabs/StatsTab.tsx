@@ -2,8 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Lock, Eye, Users, MousePointerClick, Share2 } from "lucide-react"
 
+import { useDashboardContext } from "@/context/DashboardContext"
+
 export function StatsTab() {
-  const isPro = true // Mock state
+  const { config, updateConfig } = useDashboardContext()
+  const isPro = config.isPro || false
 
   if (!isPro) {
     return (
@@ -14,7 +17,23 @@ export function StatsTab() {
           </div>
           <h3 className="text-lg font-semibold text-white mb-2">Upgrade to Pro to see who's viewing your profile.</h3>
           <p className="text-secondary mb-6 max-w-md">Get deep insights into your profile traffic, link clicks, and visitor sources with Folio Pro.</p>
-          <Button>Upgrade to Pro — ₹499 one time</Button>
+          <Button
+            onClick={async () => {
+              const res = await fetch('/api/mock-upgrade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: config.id }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                updateConfig({ isPro: true });
+              } else {
+                alert('Upgrade failed: ' + data.error);
+              }
+            }}
+          >
+            Upgrade to Pro — ₹499 one time
+          </Button>
         </div>
 
         {/* Blurred background mock content */}
@@ -53,8 +72,8 @@ export function StatsTab() {
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-secondary font-medium uppercase tracking-wider mb-1">Unique Visitors</p>
-              <p className="text-2xl font-semibold text-white">1,248</p>
+              <p className="text-xs text-secondary font-medium uppercase tracking-wider mb-1">CV Downloads</p>
+              <p className="text-2xl font-semibold text-white">128</p>
             </div>
           </CardContent>
         </Card>
