@@ -1,9 +1,11 @@
+"use client"
 import Link from "next/link"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { Card } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
-import { ArrowRight, CheckCircle2, Zap, Link as LinkIcon, BarChart3, Star, Code, Trophy, UserCheck, Globe } from "lucide-react"
+import { ArrowRight, CheckCircle2, Zap, Link as LinkIcon, BarChart3, Star, Code, Trophy, UserCheck, Globe, Check, X, Loader2 } from "lucide-react"
+import { useState, useRef, useCallback } from "react"
 
 const SOCIAL_PROOF = [
   { initials: "AR", color: "#7C6FFF" },
@@ -54,6 +56,31 @@ const PRO_FEATURES = [
 ]
 
 export default function LandingPage() {
+  const [claimUsername, setClaimUsername] = useState('')
+  const [checking, setChecking] = useState(false)
+  const [available, setAvailable] = useState<boolean | null>(null)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  const checkAvailability = useCallback((value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!value || value.length < 3) { setAvailable(null); setChecking(false); return }
+    setChecking(true)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/check-username?username=${encodeURIComponent(value)}`)
+        const data = await res.json()
+        setAvailable(data.available)
+      } catch { setAvailable(null) }
+      setChecking(false)
+    }, 400)
+  }, [])
+
+  const handleClaimInput = (value: string) => {
+    const clean = value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 20)
+    setClaimUsername(clean)
+    checkAvailability(clean)
+  }
+
   return (
     <div className="min-h-screen bg-page text-primary font-sans flex flex-col overflow-x-hidden relative selection:bg-accent/40">
       {/* Rich Dynamic Background Effects */}
@@ -151,7 +178,7 @@ export default function LandingPage() {
           <div className="hidden lg:flex absolute right-16 bottom-48 flex-col gap-2 animate-float-slow z-20" style={{ animationDelay: '1s' }}>
              <div className="flex items-center gap-2 bg-[#111] border border-white/10 p-2 px-3 rounded-xl shadow-xl">
                 <Globe className="w-3.5 h-3.5 text-accent" />
-                <span className="text-[11px] text-secondary font-medium">anushrav.dev</span>
+                <span className="text-[11px] text-secondary font-medium">yourdomain.dev</span>
              </div>
           </div>
 
@@ -191,20 +218,29 @@ export default function LandingPage() {
                 folio.in/
               </div>
               <div className="pl-4 text-secondary text-sm font-medium sm:hidden">f.in/</div>
-              <Input
-                type="text"
-                placeholder="username"
-                className="pl-1 pr-3 h-12 sm:h-14 text-[16px] font-semibold bg-transparent border-0 shadow-none text-white focus:ring-0 placeholder:opacity-40 flex-1 w-full min-w-0"
-              />
+              <div className="flex-1 relative min-w-0">
+                <input
+                  type="text"
+                  placeholder="username"
+                  value={claimUsername}
+                  onChange={(e) => handleClaimInput(e.target.value)}
+                  className="pl-1 pr-8 h-12 sm:h-14 text-[16px] font-semibold bg-transparent border-0 shadow-none text-white focus:ring-0 focus:outline-none placeholder:opacity-40 w-full"
+                />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  {checking && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
+                  {!checking && available === true && <Check className="w-4 h-4 text-success" />}
+                  {!checking && available === false && claimUsername.length >= 3 && <X className="w-4 h-4 text-red-500" />}
+                </div>
+              </div>
               <Link
-                href="/signup"
+                href={claimUsername.length >= 3 ? `/signup?username=${encodeURIComponent(claimUsername)}` : '/signup'}
                 className="h-11 sm:h-12 px-6 sm:px-8 rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2 shrink-0 shadow-lg bg-white text-black hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all border-0"
               >
                 Claim URL <ArrowRight className="w-4 h-4 stroke-[3]" />
               </Link>
             </div>
             <p className="mt-4 text-[13px] text-tertiary font-medium">
-               ✨ 100% free. Takes less than 2 minutes.
+               {available === true && claimUsername ? <span className="text-success">✓ folio.in/{claimUsername} is available!</span> : '✨ 100% free. Takes less than 2 minutes.'}
             </p>
           </div>
         </section>
@@ -226,7 +262,7 @@ export default function LandingPage() {
                   <div className="flex-1 max-w-sm mx-auto">
                     <div className="h-7 rounded-lg bg-black/40 border border-white/5 flex items-center justify-center px-3 gap-2">
                        <Zap className="w-3 h-3 text-success fill-success" />
-                       <span className="text-[11px] font-medium text-secondary tracking-wide">folio.in/anushrav</span>
+                       <span className="text-[11px] font-medium text-secondary tracking-wide">folio.in/yourname</span>
                     </div>
                   </div>
                   <div className="w-16 flex justify-end">

@@ -4,7 +4,11 @@ import { supabaseAdmin } from '@/lib/supabaseServer';
 export async function POST(req: Request) {
   try {
     const { config } = await req.json();
-    const { id: userId, name, title, location, bio, avatarUrl, isPro, theme, openToWork, socialLinks, leetcodeUsername, skills, experiences, projects, education } = config;
+    const { 
+      id: userId, username, name, title, location, bio, avatarUrl, cvUrl, email,
+      isPro, theme, openToWork, socialLinks, leetcodeUsername, 
+      skills, experiences, projects, education 
+    } = config;
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'User ID is required' }, { status: 400 });
@@ -15,7 +19,7 @@ export async function POST(req: Request) {
       .from('profiles')
       .upsert({
         id: userId,
-        username: name?.toLowerCase().replace(/\s+/g, '') || `user-${userId.substring(0, 5)}`,
+        username: username || name?.toLowerCase().replace(/\s+/g, '') || `user-${userId.substring(0, 5)}`,
         full_name: name,
         title,
         about: bio,
@@ -33,10 +37,10 @@ export async function POST(req: Request) {
       .from('social_links')
       .upsert({
         id: userId,
-        github: socialLinks.github,
-        linkedin: socialLinks.linkedin,
-        twitter: socialLinks.twitter,
-        leetcode: leetcodeUsername,
+        github: socialLinks?.github || '',
+        linkedin: socialLinks?.linkedin || '',
+        twitter: socialLinks?.twitter || '',
+        leetcode: leetcodeUsername || '',
       });
 
     if (socialError) throw socialError;

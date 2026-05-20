@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
 import { Mail, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
 
@@ -13,13 +13,38 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const router = useRouter()
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        // Check if user has a profile with username
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (profile?.username) {
+          router.push('/dashboard')
+        } else {
+          router.push('/onboarding')
+        }
+        return
+      }
+      setCheckingAuth(false)
+    }
+    checkAuth()
+  }, [router])
 
   const handleGithubLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: window.location.origin + '/dashboard'
+        redirectTo: window.location.origin + '/onboarding'
       }
     })
   }
@@ -29,17 +54,36 @@ export default function LoginPage() {
     setLoading(true)
     setMessage("")
     
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
       setMessage(error.message)
-    } else {
-      router.push('/dashboard')
+    } else if (data.user) {
+      // Check if user has a profile with username
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      if (profile?.username) {
+        router.push('/dashboard')
+      } else {
+        router.push('/onboarding')
+      }
     }
     setLoading(false)
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"></div>
+      </div>
+    )
   }
 
   return (

@@ -4,10 +4,11 @@ import { Editor } from "@/components/dashboard/Editor"
 import { PhonePreview } from "@/components/dashboard/PhonePreview"
 import { Button } from "@/components/ui/Button"
 import Link from "next/link"
-import { Eye, ExternalLink, LayoutDashboard } from "lucide-react"
+import { Eye, ExternalLink, LayoutDashboard, Rocket, CheckCircle2, Copy } from "lucide-react"
 import { DashboardProvider, useDashboardContext } from "@/context/DashboardContext"
 import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { useToast } from "@/context/ToastContext"
 
 export default function DashboardPage() {
   return (
@@ -18,10 +19,25 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
-  const { config } = useDashboardContext()
+  const { config, updateConfig, isNewUser } = useDashboardContext()
   const [isSaving, setIsSaving] = useState(false)
+  const [showDeploySuccess, setShowDeploySuccess] = useState(false)
+  const { showToast } = useToast()
+
+  const profileUrl = config.username ? `/${config.username}` : '#'
+  const fullUrl = config.username ? `folio.in/${config.username}` : 'folio.in/...'
 
   const handleDeploy = async () => {
+    if (!config.username) {
+      showToast('Please set a username in Settings before deploying.', 'error')
+      return
+    }
+
+    if (!config.name || config.name.trim().length === 0) {
+      showToast('Please add your name before deploying.', 'error')
+      return
+    }
+
     setIsSaving(true)
     try {
       const res = await fetch('/api/save-config', {
@@ -31,14 +47,27 @@ function DashboardContent() {
       })
       const data = await res.json()
       if (data.success) {
-        alert('Successfully deployed!')
+        updateConfig({ isDeployed: true })
+        setShowDeploySuccess(true)
+        showToast(`Deployed! Your profile is live at ${fullUrl}`, 'success', 5000)
+        setTimeout(() => setShowDeploySuccess(false), 6000)
       } else {
-        alert('Deploy failed: ' + data.error)
+        showToast('Deploy failed: ' + data.error, 'error')
       }
     } catch (err) {
-      alert('An error occurred during deploy.')
+      showToast('An error occurred during deploy.', 'error')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleCopyUrl = async () => {
+    if (!config.username) return
+    try {
+      await navigator.clipboard.writeText(`https://${fullUrl}`)
+      showToast('Profile URL copied to clipboard!', 'success')
+    } catch {
+      showToast('Failed to copy URL', 'error')
     }
   }
 
@@ -48,6 +77,23 @@ function DashboardContent() {
       <div className="absolute top-0 left-0 w-full h-[500px] pointer-events-none overflow-hidden z-0 opacity-40">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-accent/10 blur-[100px] rounded-full"></div>
       </div>
+
+      {/* Deploy Success Banner */}
+      {showDeploySuccess && (
+        <div className="absolute top-14 left-0 right-0 z-50 flex justify-center animate-fade-up">
+          <div className="flex items-center gap-3 px-5 py-3 bg-success/10 border border-success/20 rounded-2xl backdrop-blur-xl shadow-2xl">
+            <CheckCircle2 className="w-5 h-5 text-success" />
+            <span className="text-sm font-semibold text-success">Profile deployed successfully!</span>
+            <a 
+              href={`https://${fullUrl}`} 
+              target="_blank" 
+              className="text-xs font-bold text-success underline underline-offset-2 hover:text-white transition-colors"
+            >
+              Visit →
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Top Navbar */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border-subtle bg-surface/50 backdrop-blur-md px-5 z-10">
@@ -61,27 +107,34 @@ function DashboardContent() {
           
           <div className="h-4 w-px bg-border-subtle hidden sm:block"></div>
           
-          <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-secondary bg-elevated/50 px-2.5 py-1 rounded-full border border-border-subtle">
-            <span>folio.com/</span>
-            <span className="text-primary font-semibold">{config.name?.toLowerCase().replace(/\s+/g, '') || 'username'}</span>
-            <a href={`/${config.name?.toLowerCase().replace(/\s+/g, '') || 'username'}`} target="_blank" className="text-tertiary hover:text-white transition-colors ml-0.5">
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
+          {config.username && (
+            <button 
+              onClick={handleCopyUrl}
+              className="hidden sm:flex items-center gap-2 text-xs font-medium text-secondary bg-elevated/50 px-2.5 py-1 rounded-full border border-border-subtle hover:border-accent/30 hover:text-white transition-all cursor-pointer group"
+            >
+              <span>folio.in/</span>
+              <span className="text-primary font-semibold">{config.username}</span>
+              <Copy className="w-3 h-3 text-tertiary group-hover:text-accent transition-colors" />
+            </button>
+          )}
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] text-secondary border border-border-subtle bg-surface/50 px-2 py-1 rounded-md mr-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
-            Changes saved
-          </div>
+          {config.isDeployed && (
+            <div className="hidden md:flex items-center gap-1.5 text-[11px] text-secondary border border-border-subtle bg-surface/50 px-2 py-1 rounded-md mr-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
+              Live
+            </div>
+          )}
           
-          <Link href={`/${config.name?.toLowerCase().replace(/\s+/g, '') || 'username'}`} target="_blank" className="hidden md:block">
-            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs border border-transparent hover:border-border-subtle font-medium">
-              <Eye className="w-3.5 h-3.5" />
-              View preview
-            </Button>
-          </Link>
+          {config.username && (
+            <Link href={profileUrl} target="_blank" className="hidden md:block">
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs border border-transparent hover:border-border-subtle font-medium">
+                <Eye className="w-3.5 h-3.5" />
+                Preview
+              </Button>
+            </Link>
+          )}
           
           <Button 
             variant="ghost" 
@@ -99,12 +152,28 @@ function DashboardContent() {
             size="sm" 
             onClick={handleDeploy}
             disabled={isSaving}
-            className="h-8 px-4 text-xs font-semibold shadow-lg shadow-accent/20 tracking-wide bg-accent hover:brightness-110 transition-all hover:scale-[1.02]"
+            className="h-8 px-4 text-xs font-semibold shadow-lg shadow-accent/20 tracking-wide bg-accent hover:brightness-110 transition-all hover:scale-[1.02] gap-1.5"
           >
+            <Rocket className="w-3.5 h-3.5" />
             {isSaving ? 'SAVING...' : 'DEPLOY'}
           </Button>
         </div>
       </header>
+
+      {/* New User Welcome Banner */}
+      {isNewUser && (
+        <div className="border-b border-accent/20 bg-accent/5 px-6 py-4 flex items-center justify-between gap-4 z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center">
+              <Rocket className="w-4 h-4 text-accent" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Welcome to Folio! 🎉</p>
+              <p className="text-xs text-secondary">Fill in your profile details below, then hit Deploy to go live.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content: Two Columns */}
       <div className="flex flex-1 overflow-hidden relative z-10">

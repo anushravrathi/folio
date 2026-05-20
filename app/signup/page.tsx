@@ -4,22 +4,57 @@ import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
 import { Mail, Loader2, User } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-page flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"></div></div>}>
+      <SignupContent />
+    </Suspense>
+  )
+}
+
+function SignupContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const claimedUsername = searchParams.get('username') || ''
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        // Check if user has a profile with username
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (profile?.username) {
+          router.push('/dashboard')
+        } else {
+          router.push(`/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}`)
+        }
+        return
+      }
+      setCheckingAuth(false)
+    }
+    checkAuth()
+  }, [router, claimedUsername])
 
   const handleGithubSignup = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: window.location.origin + '/dashboard'
+        redirectTo: window.location.origin + `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}`
       }
     })
   }
@@ -29,21 +64,33 @@ export default function SignupPage() {
     setLoading(true)
     setMessage("")
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin + '/dashboard',
+        emailRedirectTo: window.location.origin + `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}`,
       }
     })
 
     if (error) {
       setMessage(error.message)
+    } else if (data.user && !data.user.identities?.length) {
+      setMessage("An account with this email already exists. Try logging in instead.")
+    } else if (data.session) {
+      // No email confirmation required — redirect to onboarding
+      router.push(`/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}`)
     } else {
-      setMessage("Success! You can now log in.")
-      setTimeout(() => router.push('/login'), 2000)
+      setMessage("Check your email to confirm your account, then log in.")
     }
     setLoading(false)
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"></div>
+      </div>
+    )
   }
 
   return (
@@ -56,7 +103,12 @@ export default function SignupPage() {
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-white mb-2">Create your account</h1>
-          <p className="text-secondary">Start building your profile today</p>
+          <p className="text-secondary">
+            {claimedUsername 
+              ? <>Claim <span className="text-accent font-semibold">folio.in/{claimedUsername}</span> — sign up first</>
+              : "Start building your profile today"
+            }
+          </p>
         </div>
         
         <Card className="p-8 border-border-subtle bg-surface/50 shadow-none">
@@ -101,7 +153,7 @@ export default function SignupPage() {
               {loading ? "Creating account..." : "Sign Up"}
             </Button>
             {message && (
-              <p className={`text-xs text-center mt-2 font-medium animate-fade-in ${message.includes('Success') ? 'text-success' : 'text-red-500'}`}>{message}</p>
+              <p className={`text-xs text-center mt-2 font-medium animate-fade-in ${message.includes('Check your email') || message.includes('confirm') ? 'text-success' : 'text-red-500'}`}>{message}</p>
             )}
           </form>
 
@@ -114,7 +166,7 @@ export default function SignupPage() {
           <Button 
             className="w-full flex items-center justify-center gap-2 h-11 text-[15px]" 
             size="lg"
-            variant="outline"
+            variant="secondary"
             onClick={handleGithubSignup}
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true">
