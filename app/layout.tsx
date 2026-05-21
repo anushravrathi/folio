@@ -30,11 +30,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/folio-favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "any" }
+      { url: "/folio-favicon.svg?v=2", type: "image/svg+xml" },
+      { url: "/favicon.ico?v=2", sizes: "any" }
     ],
-    shortcut: "/favicon.ico",
-    apple: "/folio-favicon.svg",
+    shortcut: "/favicon.ico?v=2",
+    apple: "/folio-favicon.svg?v=2",
   },
 };
 
