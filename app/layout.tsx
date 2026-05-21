@@ -28,7 +28,12 @@ export const metadata: Metadata = {
     description: "Create a beautiful public profile page recruiters actually click.",
   },
   icons: {
-    icon: "/folio-favicon.svg",
+    icon: [
+      { url: "/folio-favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" }
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/folio-favicon.svg",
   },
 };
 
