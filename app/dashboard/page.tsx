@@ -9,6 +9,8 @@ import { DashboardProvider, useDashboardContext } from "@/context/DashboardConte
 import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useToast } from "@/context/ToastContext"
+import { ProfilePage } from "@/components/profile/ProfilePage"
+import { cn } from "@/lib/utils"
 
 export default function DashboardPage() {
   return (
@@ -22,6 +24,7 @@ function DashboardContent() {
   const { config, updateConfig, isNewUser } = useDashboardContext()
   const [isSaving, setIsSaving] = useState(false)
   const [showDeploySuccess, setShowDeploySuccess] = useState(false)
+  const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor')
   const { showToast } = useToast()
 
   const profileUrl = config.username ? `/${config.username}` : '#'
@@ -40,17 +43,22 @@ function DashboardContent() {
 
     setIsSaving(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/save-config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({ config }),
       })
       const data = await res.json()
       if (data.success) {
         updateConfig({ isDeployed: true })
-        setShowDeploySuccess(true)
-        showToast(`Deployed! Your profile is live at ${fullUrl}`, 'success', 5000)
-        setTimeout(() => setShowDeploySuccess(false), 6000)
+        showToast(`Deployed! Redirecting to your live profile...`, 'success', 3000)
+        setTimeout(() => {
+          window.location.href = `${window.location.origin}/${config.username}`
+        }, 1500)
       } else {
         showToast('Deploy failed: ' + data.error, 'error')
       }
@@ -96,7 +104,10 @@ function DashboardContent() {
       )}
 
       {/* Top Navbar */}
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border-subtle bg-surface/50 backdrop-blur-md px-5 z-10">
+      <header className={cn(
+        "flex h-14 shrink-0 items-center justify-between border-b border-border-subtle bg-surface/50 backdrop-blur-md px-5 z-10",
+        mobileView === 'preview' && "hidden lg:flex"
+      )}>
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 group">
             <img src="/folio-icon.svg" alt="Folio Logo" className="w-6 h-6 transition-transform group-hover:scale-105" />
@@ -126,21 +137,14 @@ function DashboardContent() {
               Live
             </div>
           )}
-          
-          {config.username && (
-            <Link href={profileUrl} target="_blank" className="hidden md:block">
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs border border-transparent hover:border-border-subtle font-medium">
-                <Eye className="w-3.5 h-3.5" />
-                Preview
-              </Button>
-            </Link>
-          )}
+
           
           <Button 
             variant="ghost" 
             size="sm" 
             className="h-8 text-xs text-secondary hover:text-white"
             onClick={async () => {
+              localStorage.removeItem("folio_dashboard_config")
               await supabase.auth.signOut()
               window.location.href = '/'
             }}
@@ -178,38 +182,65 @@ function DashboardContent() {
       {/* Main Content: Two Columns */}
       <div className="flex flex-1 overflow-hidden relative z-10">
         {/* Left Column: Editor */}
-        <div className="w-full lg:w-[60%] flex flex-col border-r border-border-subtle bg-page relative">
+        <div className={cn(
+          "w-full lg:w-[60%] flex flex-col border-r border-border-subtle bg-page relative",
+          mobileView === 'preview' ? 'hidden lg:flex' : 'flex'
+        )}>
           <Editor />
         </div>
         
-        {/* Right Column: Live Phone Preview */}
-        <div className="hidden lg:flex w-[40%] flex-col items-center justify-center bg-[#050505] relative overflow-hidden">
-          {/* Background grid dots */}
-          <div className="absolute inset-0 opacity-[0.15]" 
+        {/* Right Column: Live Phone Preview (on Desktop) or Direct Mobile Preview (on Mobile) */}
+        <div className={cn(
+          "w-full lg:w-[40%] flex-col relative",
+          mobileView === 'preview' 
+            ? 'flex bg-page h-full overflow-y-auto lg:overflow-hidden lg:items-center lg:justify-center lg:bg-[#050505]' 
+            : 'hidden lg:flex items-center justify-center overflow-hidden bg-[#050505]'
+        )}>
+          {/* Background grid dots - only visible on desktop design shell */}
+          <div className="absolute inset-0 opacity-[0.15] hidden lg:block pointer-events-none" 
                style={{ 
                  backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
                  backgroundSize: '24px 24px'
                }}>
           </div>
           
-          <div className="relative z-10 animate-fade-in">
-            <PhonePreview />
+          {/* On desktop, show scaled PhonePreview. On mobile, show full width ProfilePage directly */}
+          <div className="w-full lg:h-auto lg:w-auto flex flex-col items-center justify-start lg:justify-center">
+            <div className="hidden lg:block relative z-10 animate-fade-in">
+              <PhonePreview />
+            </div>
+            <div className="block lg:hidden w-full">
+              <ProfilePage config={config} />
+            </div>
           </div>
           
-          {/* Floating helper text for preview */}
-          <div className="absolute bottom-8 flex items-center gap-2 text-[11px] font-medium text-tertiary bg-elevated/30 backdrop-blur px-3 py-1.5 rounded-full border border-border-subtle">
+          {/* Floating helper text for preview - only visible on desktop */}
+          <div className="absolute bottom-8 hidden lg:flex items-center gap-2 text-[11px] font-medium text-tertiary bg-elevated/30 backdrop-blur px-3 py-1.5 rounded-full border border-border-subtle">
             <LayoutDashboard className="w-3 h-3" />
             Live Preview
           </div>
         </div>
       </div>
       
-      {/* Mobile Preview Floating Button */}
+      {/* Mobile Floating Button: Toggles View and stays at the bottom */}
       <div className="lg:hidden fixed bottom-6 right-6 z-50">
-        <Button className="rounded-full shadow-xl shadow-accent/30 h-12 px-6 gap-2 text-sm font-bold hover:scale-105 active:scale-95 transition-transform">
-          <Eye className="w-4 h-4" />
-          Preview
-        </Button>
+        {mobileView === 'editor' ? (
+          <Button 
+            onClick={() => setMobileView('preview')}
+            className="rounded-full shadow-xl shadow-accent/30 h-12 px-6 gap-2 text-sm font-bold hover:scale-105 active:scale-95 transition-transform bg-accent text-white"
+          >
+            <Eye className="w-4 h-4" />
+            Live Preview
+          </Button>
+        ) : (
+          <Button 
+            onClick={() => setMobileView('editor')}
+            className="rounded-full shadow-xl shadow-slate-950/50 h-12 px-6 gap-2 text-sm font-bold hover:scale-105 active:scale-95 transition-transform bg-white text-slate-900 border border-slate-200"
+          >
+            <LayoutDashboard className="w-4 h-4 text-accent" />
+            Back to Editor
+          </Button>
+        )}
       </div>
     </div>
   )

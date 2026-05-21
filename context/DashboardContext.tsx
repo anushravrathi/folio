@@ -24,7 +24,7 @@ interface DashboardConfig {
   username?: string
   isPro?: boolean
   isDeployed?: boolean
-  theme: 'default' | 'emerald' | 'sunset' | 'rose'
+  theme: 'default' | 'emerald' | 'sunset' | 'rose' | 'playful'
   name: string
   title: string
   location: string
@@ -33,6 +33,7 @@ interface DashboardConfig {
   cvUrl: string
   email: string
   openToWork: boolean
+  customDomain: string
   
   showGithubActivity: boolean
   githubUsername: string
@@ -87,6 +88,7 @@ const emptyConfig: DashboardConfig = {
   cvUrl: '',
   email: '',
   openToWork: true,
+  customDomain: '',
   
   showGithubActivity: true,
   githubUsername: '',
@@ -129,7 +131,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       let profile: any = null
       try {
-        const res = await fetch(`/api/load-profile?userId=${user.id}`)
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(`/api/load-profile?userId=${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`
+          }
+        })
         if (res.ok) {
           const data = await res.json()
           profile = data.profile
@@ -145,12 +152,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       }
 
       // User has profile — load it
-      setConfig({
+      let initialConfig = {
         id: profile.id,
         username: profile.username,
         isPro: profile.is_pro,
         isDeployed: profile.is_deployed || false,
-        theme: profile.theme || 'default',
+        theme: (profile.theme || 'default') as any,
         name: profile.full_name || '',
         title: profile.title || '',
         location: profile.location || '',
@@ -159,21 +166,22 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         cvUrl: profile.cv_url || '',
         email: profile.email || user.email || '',
         openToWork: profile.open_to_work ?? true,
-        showGithubActivity: true,
+        customDomain: profile.custom_domain || '',
+        showGithubActivity: profile.show_github_activity ?? true,
         githubUsername: profile.social_links?.github || '',
         leetcodeUsername: profile.social_links?.leetcode || '',
-        spotifyTrackUrl: '',
-        spotifyData: null,
+        spotifyTrackUrl: profile.spotify_track_url || '',
+        spotifyData: profile.spotify_data || null,
         socialLinks: {
           github: profile.social_links?.github || '',
           linkedin: profile.social_links?.linkedin || '',
           twitter: profile.social_links?.twitter || '',
         },
         education: {
-          degree: '',
-          school: '',
-          cgpa: '',
-          year: '',
+          degree: profile.education_degree || '',
+          school: profile.education_school || '',
+          cgpa: profile.education_cgpa || '',
+          year: profile.education_year || '',
         },
         skills: profile.skills?.map((s: any) => s.name) || [],
         experiences: profile.experience?.map((ex: any) => ({
@@ -182,7 +190,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           startMonth: ex.start_month,
           endMonth: ex.end_month,
           isCurrent: ex.is_current,
-          description: ex.description,
+          description: ex.description || '',
         })) || [],
         projects: profile.projects?.map((p: any) => ({
           name: p.name,
@@ -190,7 +198,29 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           link: p.live_url,
           isDeployed: p.is_deployed,
         })) || [],
-      })
+      }
+
+      // Restore unsaved in-progress draft from localStorage if the profile ID matches
+      try {
+        const saved = localStorage.getItem("folio_dashboard_config")
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed && parsed.id === profile.id) {
+            initialConfig = {
+              ...initialConfig,
+              ...parsed,
+              id: profile.id, // always override with fresh db status
+              username: profile.username,
+              isPro: profile.is_pro,
+              isDeployed: profile.is_deployed || false,
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to restore unsaved config from localStorage:", e)
+      }
+
+      setConfig(initialConfig)
 
       // Check if this is essentially a new user (just onboarded, no content yet)
       const hasNoContent = !profile.about && 

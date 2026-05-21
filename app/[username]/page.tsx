@@ -1,36 +1,22 @@
 import { notFound } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabaseServer';
 import { ProfilePage } from '@/components/profile/ProfilePage';
+import { themeMap } from '@/lib/themes';
 import React from 'react';
 import type { Metadata } from 'next';
-
-// Theme mapping (same as used in ProfilePage component)
-const themeMap = {
-  default: { glow: 'rgba(124,111,255,0.15)', accent: 'from-[#6C63FF] to-blue-500', primaryColor: '#6C63FF', accentDim: 'rgba(108,99,255,0.13)' },
-  emerald: { glow: 'rgba(16,185,129,0.15)', accent: 'from-emerald-500 to-cyan-500', primaryColor: '#10B981', accentDim: 'rgba(16,185,129,0.13)' },
-  sunset: { glow: 'rgba(245,158,11,0.15)', accent: 'from-amber-500 to-rose-600', primaryColor: '#F59E0B', accentDim: 'rgba(245,158,11,0.13)' },
-  rose: { glow: 'rgba(225,29,72,0.15)', accent: 'from-rose-500 to-violet-600', primaryColor: '#E11D48', accentDim: 'rgba(225,29,72,0.13)' },
-};
-
-function getSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  return createClient(supabaseUrl, supabaseAnonKey);
-}
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 // Dynamic SEO metadata
-export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
-  const { username } = params;
-  const supabase = getSupabase();
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
 
-  const { data: profile } = await supabase
+  const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('full_name, title, about, avatar_url')
     .eq('username', username)
-    .single();
+    .maybeSingle();
 
   if (!profile) {
     return {
@@ -60,15 +46,23 @@ export async function generateMetadata({ params }: { params: { username: string 
   };
 }
 
-export default async function PublicProfile({ params }: { params: { username: string } }) {
-  const { username } = params;
-  const supabase = getSupabase();
+export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params;
 
-  const { data: profile, error } = await supabase
+  console.log('[DEBUG PublicProfile] Fetching username:', username);
+  console.log('[DEBUG PublicProfile] SUPABASE_SERVICE_ROLE_KEY is defined:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  const { data: profile, error } = await supabaseAdmin
     .from('profiles')
     .select('*, projects(*), experience(*), skills(*), social_links(*)')
     .eq('username', username)
-    .single();
+    .maybeSingle();
+
+  if (error) {
+    console.error('[DEBUG PublicProfile] Error fetching profile:', error);
+  } else {
+    console.log('[DEBUG PublicProfile] Profile found:', !!profile);
+  }
 
   if (error || !profile) {
     notFound();
@@ -79,10 +73,28 @@ export default async function PublicProfile({ params }: { params: { username: st
   const styleVars: React.CSSProperties = {
     '--color-accent': activeTheme.primaryColor,
     '--color-accent-dim': activeTheme.accentDim,
+    '--color-page': activeTheme.pageBg,
+    '--color-surface': activeTheme.surfaceBg,
+    '--color-elevated': activeTheme.elevatedBg,
+    '--color-primary': activeTheme.primaryText,
+    '--color-secondary': activeTheme.secondaryText,
+    '--color-tertiary': activeTheme.tertiaryText,
+    '--color-border-subtle': activeTheme.borderSubtle,
+    '--color-border-focus': activeTheme.borderFocus,
+    ...(activeTheme.badgeOpenBg && { '--color-badge-open-bg': activeTheme.badgeOpenBg }),
+    ...(activeTheme.badgeOpenFg && { '--color-badge-open-fg': activeTheme.badgeOpenFg }),
+    ...(activeTheme.badgeInternBg && { '--color-badge-intern-bg': activeTheme.badgeInternBg }),
+    ...(activeTheme.badgeInternFg && { '--color-badge-intern-fg': activeTheme.badgeInternFg }),
+    ...(activeTheme.badgeFullBg && { '--color-badge-full-bg': activeTheme.badgeFullBg }),
+    ...(activeTheme.badgeFullFg && { '--color-badge-full-fg': activeTheme.badgeFullFg }),
+    ...(activeTheme.badgeBuildBg && { '--color-badge-build-bg': activeTheme.badgeBuildBg }),
+    ...(activeTheme.badgeBuildFg && { '--color-badge-build-fg': activeTheme.badgeBuildFg }),
+    ...(activeTheme.badgeDiscBg && { '--color-badge-disc-bg': activeTheme.badgeDiscBg }),
+    ...(activeTheme.badgeDiscFg && { '--color-badge-disc-fg': activeTheme.badgeDiscFg }),
   } as any; // cast to any to allow custom CSS vars
 
   return (
-    <div style={styleVars} className="min-h-screen bg-page text-primary font-sans">
+    <div style={styleVars} className="min-h-screen bg-page text-primary font-sans transition-colors duration-300">
       <ProfilePage profile={profile} />
     </div>
   );

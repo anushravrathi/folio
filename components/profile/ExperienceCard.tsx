@@ -64,11 +64,11 @@ export function ExperienceCard({
       </div>
 
       {/* Content */}
-      <div className="flex-1 pb-6 border-b border-border-subtle/50 group-last:border-0 group-last:pb-0">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 mb-1">
+      <div className="flex-1 pb-6 border-b border-border-subtle group-last:border-0 group-last:pb-0">
+        <div className="flex flex-col @md:flex-row @md:items-start justify-between gap-1 mb-1">
           <div>
-            <h4 className="text-[15px] font-semibold text-white leading-tight">{companyName}</h4>
-            <p className="text-[14px] text-primary">{role}</p>
+            <h4 className="text-[15px] font-semibold text-primary leading-tight">{companyName}</h4>
+            <p className="text-[14px] text-secondary">{role}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {isCurrent ? (
@@ -82,7 +82,7 @@ export function ExperienceCard({
           </div>
         </div>
 
-        <div className="text-[13px] text-tertiary mb-2 font-medium">
+        <div className="text-[12.5px] text-secondary mb-2 font-medium">
           {startMonth} → {isCurrent ? "Present" : endMonth}
         </div>
 

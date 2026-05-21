@@ -134,3 +134,17 @@ create policy "Owner can read link clicks" on link_clicks for select using (auth
 
 create policy "Anyone can insert shares" on profile_shares for insert with check (true);
 create policy "Owner can read shares" on profile_shares for select using (auth.uid() = profile_id);
+
+-- Performance Optimization Indexes
+-- 1. Optimize Next.js Edge custom domain resolution
+create index if not exists idx_profiles_custom_domain on profiles(custom_domain);
+
+-- 2. Optimize standard foreign key relational queries
+create index if not exists idx_skills_profile_id on skills(profile_id);
+create index if not exists idx_projects_profile_id on projects(profile_id);
+create index if not exists idx_experience_profile_id on experience(profile_id);
+
+-- 3. Optimize analytics queries with composite indexes on profile_id and timestamps
+create index if not exists idx_page_views_profile_id_viewed_at on page_views(profile_id, viewed_at);
+create index if not exists idx_link_clicks_profile_id_clicked_at on link_clicks(profile_id, clicked_at);
+create index if not exists idx_profile_shares_profile_id_shared_at on profile_shares(profile_id, shared_at);

@@ -6,6 +6,7 @@ import { Lock, Eye, Users, MousePointerClick, Share2, Mail, FileDown, Loader2 } 
 import { useDashboardContext } from "@/context/DashboardContext"
 import { useToast } from "@/context/ToastContext"
 import { useState, useEffect, useCallback } from "react"
+import { supabase } from "@/lib/supabaseClient"
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 
 interface StatsData {
@@ -31,7 +32,12 @@ export function StatsTab() {
     if (!isPro || !config.id) return
     setLoading(true)
     try {
-      const res = await fetch(`/api/analytics/stats?profile_id=${config.id}&period=${period}`)
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/analytics/stats?profile_id=${config.id}&period=${period}`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
       if (res.ok) {
         const data = await res.json()
         setStats(data)
@@ -46,6 +52,89 @@ export function StatsTab() {
     }
     setLoading(false)
   }, [isPro, config.id, period, showToast])
+
+  const handleUpgrade = async () => {
+    setUpgrading(true)
+    try {
+      // 1. Create order on backend
+      const { data: { session } } = await supabase.auth.getSession()
+      const orderRes = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ amount: 49900 }), // ₹499 in paise
+      })
+      const order = await orderRes.json()
+
+      const orderId = order.order_id || order.id
+
+      if (order.error) {
+        showToast('Upgrade failed: ' + order.error, 'error')
+        setUpgrading(false)
+        return
+      }
+
+      // 2. Setup checkout options
+      const options = {
+        key: order.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Folio Pro",
+        description: "Unlock lifetime custom domains & premium templates",
+        order_id: orderId,
+        handler: async function (response: any) {
+          try {
+            // Verify on backend
+            const { data: { session: verifySess } } = await supabase.auth.getSession()
+            const verifyRes = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${verifySess?.access_token}`
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            })
+            const verifyData = await verifyRes.json()
+            if (verifyData.success) {
+              updateConfig({ isPro: true })
+              showToast('🎉 Welcome to Pro! All features unlocked successfully.', 'success', 5000)
+            } else {
+              showToast('Payment verification failed. Please contact support.', 'error')
+            }
+          } catch {
+            showToast('Failed to verify payment.', 'error')
+          }
+        },
+        prefill: {
+          name: config.name || "",
+          email: config.email || "",
+        },
+        theme: {
+          color: "#6C63FF",
+        },
+      }
+
+       // 3. Dynamically load the checkout script and open the overlay
+       const script = document.createElement("script")
+       script.src = "https://checkout.razorpay.com/v1/checkout.js"
+       script.async = true
+       script.onload = () => {
+         const rzp = new (window as any).Razorpay(options)
+         rzp.open()
+       }
+       document.body.appendChild(script)
+
+    } catch {
+      showToast('Upgrade failed. Please try again.', 'error')
+    }
+    setUpgrading(false)
+  }
 
   useEffect(() => {
     fetchStats()
@@ -62,26 +151,7 @@ export function StatsTab() {
           <p className="text-secondary mb-6 max-w-md">Get deep insights into your profile traffic, link clicks, and visitor sources with Folio Pro.</p>
           <Button
             disabled={upgrading}
-            onClick={async () => {
-              setUpgrading(true)
-              try {
-                const res = await fetch('/api/mock-upgrade', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId: config.id }),
-                })
-                const data = await res.json()
-                if (data.success) {
-                  updateConfig({ isPro: true })
-                  showToast('🎉 Welcome to Pro! Analytics unlocked.', 'success')
-                } else {
-                  showToast('Upgrade failed: ' + data.error, 'error')
-                }
-              } catch {
-                showToast('Upgrade failed. Please try again.', 'error')
-              }
-              setUpgrading(false)
-            }}
+            onClick={handleUpgrade}
           >
             {upgrading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             Upgrade to Pro — ₹499 one time

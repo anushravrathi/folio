@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/Badge"
 import { Card } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
 import { ArrowRight, CheckCircle2, Zap, Link as LinkIcon, BarChart3, Star, Code, Trophy, UserCheck, Globe, Check, X, Loader2 } from "lucide-react"
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect, Suspense } from "react"
+import { supabase } from "@/lib/supabaseClient"
+import { useSearchParams } from "next/navigation"
 
 const SOCIAL_PROOF = [
   { initials: "AR", color: "#7C6FFF" },
@@ -56,10 +58,202 @@ const PRO_FEATURES = [
 ]
 
 export default function LandingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-page" />}>
+      <LandingContent />
+    </Suspense>
+  )
+}
+
+function LandingContent() {
   const [claimUsername, setClaimUsername] = useState('')
   const [checking, setChecking] = useState(false)
   const [available, setAvailable] = useState<boolean | null>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [hasProfile, setHasProfile] = useState<boolean>(false)
+  const [isPro, setIsPro] = useState(false)
+  const [upgrading, setUpgrading] = useState(false)
+  const paymentButtonRef = useRef<HTMLFormElement>(null)
+  const searchParams = useSearchParams()
+  const upgradeTriggered = useRef(false)
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUser(user)
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          const res = await fetch(`/api/check-onboarding?userId=${user.id}`, {
+            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          })
+          if (res.ok) {
+            const data = await res.json()
+            if (data.onboarded) {
+              setHasProfile(true)
+            }
+            if (data.isPro) {
+              setIsPro(true)
+            }
+          }
+        } catch (err) {
+          console.error("Failed to check user profile status:", err)
+        }
+      }
+    }
+    checkUser()
+  }, [])
+
+  // Auto-trigger checkout when redirected back from login with ?upgrade=pro
+  useEffect(() => {
+    if (searchParams.get('upgrade') === 'pro' && user && hasProfile && !isPro && !upgradeTriggered.current) {
+      upgradeTriggered.current = true
+      // Small delay to let the page render first
+      setTimeout(() => handleProUpgrade(), 500)
+    }
+  }, [user, hasProfile, isPro, searchParams])
+
+  useEffect(() => {
+    if (paymentButtonRef.current) {
+      paymentButtonRef.current.innerHTML = ''
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/payment-button.js"
+      script.setAttribute("data-payment_button_id", "pl_SrxspvWLwltGFk")
+      script.async = true
+      paymentButtonRef.current.appendChild(script)
+    }
+  }, [])
+
+  const handleProUpgrade = async () => {
+    // Fresh auth check — don't rely on potentially stale state
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    
+    if (!currentUser) {
+      // Not logged in → redirect to login, then back here with ?upgrade=pro
+      window.location.href = '/login?redirect=' + encodeURIComponent('/?upgrade=pro')
+      return
+    }
+
+    // Fresh profile check via secure API
+    let hasProfileDb = false
+    let isProDb = false
+    try {
+      const { data: { session: freshSession } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/check-onboarding?userId=${currentUser.id}`, {
+        headers: { 'Authorization': `Bearer ${freshSession?.access_token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        hasProfileDb = data.onboarded
+        isProDb = data.isPro
+      }
+    } catch (err) {
+      console.error("Failed to fetch fresh profile state:", err)
+    }
+
+    if (!hasProfileDb) {
+      // No profile yet → send to onboarding first
+      window.location.href = '/onboarding?redirect=' + encodeURIComponent('/?upgrade=pro')
+      return
+    }
+
+    if (isProDb) {
+      setIsPro(true)
+      return
+    }
+
+    setUpgrading(true)
+    try {
+      // 1. Create order
+      const { data: { session: orderSession } } = await supabase.auth.getSession()
+      const orderRes = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${orderSession?.access_token}`
+        },
+        body: JSON.stringify({ amount: 49900 }),
+      })
+      const order = await orderRes.json()
+      if (order.error) {
+        alert('Failed to create order: ' + order.error)
+        setUpgrading(false)
+        return
+      }
+
+      const orderId = order.order_id || order.id
+
+      // 2. Open Razorpay checkout
+      const options = {
+        key: order.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Folio Pro",
+        description: "Unlock lifetime custom domains & premium templates",
+        order_id: orderId,
+        handler: async function (response: any) {
+          try {
+            const { data: { session: verifySess } } = await supabase.auth.getSession()
+            const verifyRes = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${verifySess?.access_token}`
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            })
+            const verifyData = await verifyRes.json()
+            if (verifyData.success) {
+              setIsPro(true)
+              alert('🎉 Welcome to Pro! All features unlocked successfully.')
+            } else {
+              alert('Payment verification failed. Please contact support.')
+            }
+          } catch {
+            alert('Failed to verify payment. Please contact support.')
+          }
+          setUpgrading(false)
+        },
+        modal: {
+          ondismiss: function () {
+            setUpgrading(false)
+          }
+        },
+        prefill: {
+          email: currentUser.email || "",
+        },
+        theme: {
+          color: "#6C63FF",
+        },
+      }
+
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/checkout.js"
+      script.async = true
+      script.onload = () => {
+        const rzp = new (window as any).Razorpay(options)
+        rzp.on('payment.failed', function (response: any) {
+          alert('Payment failed: ' + (response.error?.description || 'Unknown error'))
+          setUpgrading(false)
+        })
+        rzp.open()
+      }
+      script.onerror = () => {
+        alert('Failed to load Razorpay. Please check your internet connection.')
+        setUpgrading(false)
+      }
+      document.body.appendChild(script)
+    } catch {
+      alert('Something went wrong. Please try again.')
+      setUpgrading(false)
+    }
+  }
+
 
   const checkAvailability = useCallback((value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -124,16 +318,26 @@ export default function LandingPage() {
               Pricing
             </Link>
             <div className="flex items-center gap-3">
-              <Link href="/login">
-                <Button variant="ghost" size="sm" className="rounded-lg text-sm font-semibold text-secondary hover:text-white px-4">
-                  Log In
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button variant="primary" size="sm" className="rounded-xl text-xs font-bold px-5 h-9 shadow-glow">
-                  Sign Up
-                </Button>
-              </Link>
+              {user ? (
+                <Link href={hasProfile ? "/dashboard" : "/onboarding"}>
+                  <Button variant="primary" size="sm" className="rounded-xl text-xs font-bold px-5 h-9 shadow-glow">
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm" className="rounded-lg text-sm font-semibold text-secondary hover:text-white px-4">
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link href="/signup">
+                    <Button variant="primary" size="sm" className="rounded-xl text-xs font-bold px-5 h-9 shadow-glow">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -211,38 +415,56 @@ export default function LandingPage() {
           </p>
 
           {/* Claim CTA Block */}
-          <div className="animate-fade-up-delay-3 w-full max-w-[480px] relative z-20 group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-accent via-[#A855F7] to-accent rounded-[24px] opacity-20 group-hover:opacity-40 blur-xl transition-opacity duration-500"></div>
-            <div className="relative flex items-center p-1.5 sm:p-2 rounded-[22px] border border-white/15 bg-[#0F0F0F] shadow-2xl backdrop-blur-xl">
-              <div className="pl-4 sm:pl-5 text-secondary text-[15px] font-medium tracking-wide pointer-events-none select-none hidden sm:block">
-                folio.in/
-              </div>
-              <div className="pl-4 text-secondary text-sm font-medium sm:hidden">f.in/</div>
-              <div className="flex-1 relative min-w-0">
-                <input
-                  type="text"
-                  placeholder="username"
-                  value={claimUsername}
-                  onChange={(e) => handleClaimInput(e.target.value)}
-                  className="pl-1 pr-8 h-12 sm:h-14 text-[16px] font-semibold bg-transparent border-0 shadow-none text-white focus:ring-0 focus:outline-none placeholder:opacity-40 w-full"
-                />
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                  {checking && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
-                  {!checking && available === true && <Check className="w-4 h-4 text-success" />}
-                  {!checking && available === false && claimUsername.length >= 3 && <X className="w-4 h-4 text-red-500" />}
+          {user ? (
+            <div className="animate-fade-up-delay-3 w-full max-w-[480px] relative z-20 group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-accent via-[#A855F7] to-accent rounded-[24px] opacity-25 blur-xl"></div>
+              <div className="relative p-6 rounded-[22px] border border-white/15 bg-[#0F0F0F] shadow-2xl backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-left w-full sm:w-auto">
+                  <p className="text-xs font-bold text-tertiary uppercase tracking-wider">Welcome back</p>
+                  <p className="text-sm font-bold text-white truncate max-w-[260px] mt-0.5">{user.email}</p>
                 </div>
+                <Link
+                  href={hasProfile ? "/dashboard" : "/onboarding"}
+                  className="w-full sm:w-auto h-12 px-8 rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2 shrink-0 shadow-lg bg-white text-black hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all border-0"
+                >
+                  Go to Dashboard <ArrowRight className="w-4 h-4 stroke-[3]" />
+                </Link>
               </div>
-              <Link
-                href={claimUsername.length >= 3 ? `/signup?username=${encodeURIComponent(claimUsername)}` : '/signup'}
-                className="h-11 sm:h-12 px-6 sm:px-8 rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2 shrink-0 shadow-lg bg-white text-black hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all border-0"
-              >
-                Claim URL <ArrowRight className="w-4 h-4 stroke-[3]" />
-              </Link>
             </div>
-            <p className="mt-4 text-[13px] text-tertiary font-medium">
-               {available === true && claimUsername ? <span className="text-success">✓ folio.in/{claimUsername} is available!</span> : '✨ 100% free. Takes less than 2 minutes.'}
-            </p>
-          </div>
+          ) : (
+            <div className="animate-fade-up-delay-3 w-full max-w-[480px] relative z-20 group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-accent via-[#A855F7] to-accent rounded-[24px] opacity-20 group-hover:opacity-40 blur-xl transition-opacity duration-500"></div>
+              <div className="relative flex items-center p-1.5 sm:p-2 rounded-[22px] border border-white/15 bg-[#0F0F0F] shadow-2xl backdrop-blur-xl">
+                <div className="pl-4 sm:pl-5 text-secondary text-[15px] font-medium tracking-wide pointer-events-none select-none hidden sm:block">
+                  folio.in/
+                </div>
+                <div className="pl-4 text-secondary text-sm font-medium sm:hidden">f.in/</div>
+                <div className="flex-1 relative min-w-0">
+                  <input
+                    type="text"
+                    placeholder="username"
+                    value={claimUsername}
+                    onChange={(e) => handleClaimInput(e.target.value)}
+                    className="pl-1 pr-8 h-12 sm:h-14 text-[16px] font-semibold bg-transparent border-0 shadow-none text-white focus:ring-0 focus:outline-none placeholder:opacity-40 w-full"
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    {checking && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
+                    {!checking && available === true && <Check className="w-4 h-4 text-success" />}
+                    {!checking && available === false && claimUsername.length >= 3 && <X className="w-4 h-4 text-red-500" />}
+                  </div>
+                </div>
+                <Link
+                  href={claimUsername.length >= 3 ? `/signup?username=${encodeURIComponent(claimUsername)}` : '/signup'}
+                  className="h-11 sm:h-12 px-6 sm:px-8 rounded-2xl font-bold text-[15px] flex items-center justify-center gap-2 shrink-0 shadow-lg bg-white text-black hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all border-0"
+                >
+                  Claim URL <ArrowRight className="w-4 h-4 stroke-[3]" />
+                </Link>
+              </div>
+              <p className="mt-4 text-[13px] text-tertiary font-medium">
+                 {available === true && claimUsername ? <span className="text-success">✓ folio.in/{claimUsername} is available!</span> : '✨ 100% free. Takes less than 2 minutes.'}
+              </p>
+            </div>
+          )}
         </section>
 
         {/* ── Premium Interactive / Immersive Showcase ─────────────────── */}
@@ -407,50 +629,101 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <Link href="/login">
+              <Link href={user ? (hasProfile ? "/dashboard" : "/onboarding") : "/login"}>
                 <Button variant="secondary" size="lg" className="w-full font-bold rounded-2xl h-12 text-sm tracking-wide border-white/10 bg-transparent hover:bg-white/5">
-                  Build your profile
+                  {user ? "Go to Dashboard" : "Build your profile"}
                 </Button>
               </Link>
             </div>
 
             {/* Pro tier card - Featured */}
-            <div className="relative p-[2px] rounded-3xl bg-gradient-to-b from-accent to-transparent shadow-2xl shadow-accent/10 group transition-all duration-500 hover:shadow-accent/20">
+            <div className={`relative p-[2px] rounded-3xl shadow-2xl group transition-all duration-500 ${isPro ? 'bg-gradient-to-b from-[#34C77B] to-transparent shadow-[#34C77B]/10' : 'bg-gradient-to-b from-accent to-transparent shadow-accent/10 hover:shadow-accent/20'}`}>
                <div className="h-full w-full rounded-[22px] bg-[#0F0F0F] relative p-8 flex flex-col overflow-hidden">
                   
                   {/* Subtle pro visual flare */}
-                  <div className="absolute top-0 right-0 bg-accent/10 w-40 h-40 blur-3xl rounded-full pointer-events-none"></div>
+                  <div className={`absolute top-0 right-0 w-40 h-40 blur-3xl rounded-full pointer-events-none ${isPro ? 'bg-[#34C77B]/10' : 'bg-accent/10'}`}></div>
 
                   <div className="flex items-center justify-between mb-8 relative z-10">
                      <div>
-                        <div className="inline-flex items-center gap-1.5 p-1.5 px-3 rounded-lg bg-accent/10 border border-accent/20 text-[11px] font-extrabold text-accent tracking-wider uppercase mb-4">
-                           <Zap className="w-3 h-3 fill-accent" /> Pro
+                        <div className={`inline-flex items-center gap-1.5 p-1.5 px-3 rounded-lg text-[11px] font-extrabold tracking-wider uppercase mb-4 ${isPro ? 'bg-[#34C77B]/10 border border-[#34C77B]/20 text-[#34C77B]' : 'bg-accent/10 border border-accent/20 text-accent'}`}>
+                           {isPro ? <><CheckCircle2 className="w-3 h-3" /> Your Plan</> : <><Zap className="w-3 h-3 fill-accent" /> Pro</>}
                         </div>
                         <div className="flex items-baseline gap-2">
-                           <span className="text-5xl font-black text-white tracking-tighter">₹199</span>
-                           <span className="text-secondary/70 font-bold text-sm uppercase tracking-widest">One Time</span>
+                           {isPro ? (
+                             <>
+                               <span className="text-5xl font-black text-[#34C77B] tracking-tighter">Active</span>
+                             </>
+                           ) : (
+                             <>
+                               <span className="text-5xl font-black text-white tracking-tighter">₹499</span>
+                               <span className="text-secondary/70 font-bold text-sm uppercase tracking-widest">One Time</span>
+                             </>
+                           )}
                         </div>
                      </div>
                      <div className="hidden sm:block text-right opacity-30 group-hover:opacity-100 transition-opacity">
-                        <Star className="w-8 h-8 text-accent fill-accent/20" />
+                        <Star className={`w-8 h-8 ${isPro ? 'text-[#34C77B] fill-[#34C77B]/20' : 'text-accent fill-accent/20'}`} />
                      </div>
                   </div>
 
                   <div className="space-y-4 mb-10 flex-1 relative z-10">
                      {PRO_FEATURES.map((f, idx) => (
                        <div key={idx} className="flex items-center gap-3">
-                          <div className="w-5 h-5 rounded-full bg-accent/10 flex items-center justify-center shrink-0 shadow-[0_0_8px_rgba(124,111,255,0.2)]">
-                             <CheckCircle2 className="w-3 h-3 text-accent" />
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPro ? 'bg-[#34C77B]/10 shadow-[0_0_8px_rgba(52,199,123,0.2)]' : 'bg-accent/10 shadow-[0_0_8px_rgba(124,111,255,0.2)]'}`}>
+                             <CheckCircle2 className={`w-3 h-3 ${isPro ? 'text-[#34C77B]' : 'text-accent'}`} />
                           </div>
                           <span className="text-[14px] text-primary font-bold">{f}</span>
                        </div>
                      ))}
                   </div>
 
-                  <Button size="lg" className="w-full font-bold rounded-2xl h-12 text-sm bg-accent text-white relative z-10 border-0 shadow-glow group-hover:scale-[1.01] transition-transform">
-                     Unlock Pro Access
-                  </Button>
+                  {isPro ? (
+                    <div className="w-full font-bold rounded-2xl h-12 text-sm bg-[#34C77B]/10 border border-[#34C77B]/20 text-[#34C77B] relative z-10 flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" /> All Pro Features Unlocked
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleProUpgrade}
+                      disabled={upgrading}
+                      className="w-full font-bold rounded-2xl h-12 text-sm bg-accent text-white relative z-10 border-0 shadow-glow group-hover:scale-[1.01] transition-transform flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {upgrading ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                      ) : user ? (
+                        <><Zap className="w-4 h-4 fill-white" /> Buy Pro — ₹499</>
+                      ) : (
+                        "Unlock Pro Access"
+                      )}
+                    </button>
+                  )}
                </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Support Us Section ──────────────────────────────────── */}
+        <section className="mx-auto max-w-[1200px] px-6 py-16 border-t border-white/5 relative overflow-hidden">
+          {/* Ambient Glow */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[#34C77B]/5 blur-[100px] rounded-full pointer-events-none"></div>
+
+          <div className="relative rounded-[32px] border border-[#34C77B]/20 bg-gradient-to-br from-[#0F0F0F] via-[#0D0D0D] to-[#0A0B0A] p-10 md:p-14 text-center overflow-hidden shadow-2xl">
+            <div className="relative z-10 max-w-xl mx-auto flex flex-col items-center">
+              <div className="inline-flex items-center gap-1.5 p-1.5 px-3 rounded-lg bg-[#34C77B]/10 border border-[#34C77B]/20 text-[11px] font-extrabold text-[#34C77B] tracking-wider uppercase mb-6">
+                ❤️ Support Our Mission
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight leading-tight mb-4">
+                Help Us Keep Folio Free For Students
+              </h2>
+              <p className="text-secondary font-medium text-sm md:text-base mb-8 max-w-lg leading-relaxed">
+                Folio is built with love to help students stand out. If our app helped you build your dream developer portfolio, consider supporting our hosting costs!
+              </p>
+              
+              {/* Razorpay Button Container */}
+              <div className="flex items-center justify-center p-4 bg-white/[0.02] border border-white/5 rounded-2xl min-h-[60px] min-w-[200px]">
+                <form ref={paymentButtonRef} className="flex justify-center items-center w-full">
+                  {/* Dynamic Razorpay Script goes here */}
+                </form>
+              </div>
             </div>
           </div>
         </section>
@@ -473,9 +746,9 @@ export default function LandingPage() {
                  Stand out from hundreds of candidate emails. Send recruiters a direct, dynamic profile page that sells you 24/7.
                </p>
                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Link href="/login" className="w-full sm:w-auto">
+                  <Link href={user ? (hasProfile ? "/dashboard" : "/onboarding") : "/signup"} className="w-full sm:w-auto">
                     <Button size="lg" className="w-full font-bold px-10 rounded-2xl h-14 bg-white text-black shadow-2xl shadow-white/5 hover:bg-white/90 transition-all border-0 text-base">
-                      Get Started for Free
+                      {user ? "Go to Dashboard" : "Get Started for Free"}
                     </Button>
                   </Link>
                </div>
@@ -521,7 +794,7 @@ export default function LandingPage() {
            <p className="text-tertiary text-[13px] font-medium">© 2026 Folio App. All rights reserved.</p>
            <p className="text-tertiary text-[13px] font-medium flex items-center gap-1">Made with <span className="text-red-500">❤️</span> in India.</p>
         </div>
-      </footer>
+       </footer>
     </div>
   )
 }

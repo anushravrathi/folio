@@ -8,11 +8,67 @@ import { Check, Copy, Loader2, X, Zap } from "lucide-react"
 import { useDashboardContext } from "@/context/DashboardContext"
 import { useToast } from "@/context/ToastContext"
 import { useState, useCallback, useRef, useEffect } from "react"
+import { supabase } from "@/lib/supabaseClient"
+import { useRouter } from "next/navigation"
 
 export function SettingsTab() {
   const { config, updateConfig } = useDashboardContext()
   const { showToast } = useToast()
   const isPro = config.isPro || false
+  const router = useRouter()
+
+  // Custom Domain input state
+  const [customDomainInput, setCustomDomainInput] = useState(config.customDomain || "")
+
+  // Delete account states
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    setCustomDomainInput(config.customDomain || "")
+  }, [config.customDomain])
+
+  const handleSaveCustomDomain = () => {
+    updateConfig({ customDomain: customDomainInput })
+    showToast("Custom domain setting updated! Please deploy to save changes permanently.", "success")
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.toLowerCase() !== "delete my account") {
+      showToast("Please type 'delete my account' to confirm.", "error")
+      return
+    }
+
+    setDeleting(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ userId: config.id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast("Account deleted successfully.", "success")
+        // Sign out from Supabase Auth
+        await supabase.auth.signOut()
+        // Wipe local storage
+        localStorage.removeItem("folio_dashboard_config")
+        // Redirect to homepage
+        router.push("/")
+      } else {
+        showToast(data.error || "Failed to delete account.", "error")
+        setDeleting(false)
+      }
+    } catch (err: any) {
+      showToast("Error deleting account. Please try again.", "error")
+      setDeleting(false)
+    }
+  }
 
   // Username editing
   const [editUsername, setEditUsername] = useState(config.username || '')
@@ -72,9 +128,13 @@ export function SettingsTab() {
 
     setUpdatingUsername(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/update-username', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({ userId: config.id, newUsername: editUsername }),
       })
       const data = await res.json()
@@ -105,24 +165,86 @@ export function SettingsTab() {
   const handleUpgrade = async () => {
     setUpgrading(true)
     try {
-      // TODO: Replace with real Razorpay checkout when credentials are ready
-      const res = await fetch('/api/mock-upgrade', {
+      // 1. Create order on backend
+      const { data: { session } } = await supabase.auth.getSession()
+      const orderRes = await fetch('/api/create-order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: config.id }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ amount: 49900 }), // ₹499 in paise
       })
-      const data = await res.json()
-      if (data.success) {
-        updateConfig({ isPro: true })
-        showToast('🎉 Welcome to Pro! All features unlocked.', 'success', 5000)
-      } else {
-        showToast('Upgrade failed: ' + data.error, 'error')
+      const order = await orderRes.json()
+
+      const orderId = order.order_id || order.id
+
+      if (order.error) {
+        showToast('Upgrade failed: ' + order.error, 'error')
+        setUpgrading(false)
+        return
       }
+
+      // 2. Setup checkout options
+      const options = {
+        key: order.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Folio Pro",
+        description: "Unlock lifetime custom domains & premium templates",
+        order_id: orderId,
+        handler: async function (response: any) {
+          try {
+            // Verify on backend
+            const { data: { session: verifySess } } = await supabase.auth.getSession()
+            const verifyRes = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${verifySess?.access_token}`
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            })
+            const verifyData = await verifyRes.json()
+            if (verifyData.success) {
+              updateConfig({ isPro: true })
+              showToast('🎉 Welcome to Pro! All features unlocked successfully.', 'success', 5000)
+            } else {
+              showToast('Payment verification failed. Please contact support.', 'error')
+            }
+          } catch {
+            showToast('Failed to verify payment.', 'error')
+          }
+        },
+        prefill: {
+          name: config.name || "",
+          email: config.email || "",
+        },
+        theme: {
+          color: "#6C63FF",
+        },
+      }
+
+       // 3. Dynamically load the checkout script and open the overlay
+       const script = document.createElement("script")
+       script.src = "https://checkout.razorpay.com/v1/checkout.js"
+       script.async = true
+       script.onload = () => {
+         const rzp = new (window as any).Razorpay(options)
+         rzp.open()
+       }
+       document.body.appendChild(script)
+
     } catch {
       showToast('Upgrade failed. Please try again.', 'error')
     }
     setUpgrading(false)
   }
+
 
   const usernameChanged = editUsername !== config.username && editUsername.length >= 3
 
@@ -198,8 +320,16 @@ export function SettingsTab() {
                 placeholder="e.g. yourname.com" 
                 className="flex-1"
                 disabled={!isPro}
+                value={customDomainInput}
+                onChange={(e) => setCustomDomainInput(e.target.value)}
               />
-              <Button variant="secondary" disabled={!isPro}>Save</Button>
+              <Button 
+                variant="secondary" 
+                disabled={!isPro || customDomainInput === config.customDomain}
+                onClick={handleSaveCustomDomain}
+              >
+                Save
+              </Button>
             </div>
             {!isPro && (
               <p className="text-xs text-tertiary mt-1.5">Upgrade to Pro to use a custom domain.</p>
@@ -252,11 +382,53 @@ export function SettingsTab() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-secondary mb-4">Once you delete your account, there is no going back. Please be certain.</p>
-          <Button variant="danger" className="w-full sm:w-auto">
+          <Button variant="danger" className="w-full sm:w-auto" onClick={() => setShowDeleteModal(true)}>
             Delete Account
           </Button>
         </CardContent>
       </Card>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md p-6 rounded-2xl border border-red-500/20 bg-elevated shadow-2xl space-y-4 m-4">
+            <h3 className="text-lg font-bold text-white font-sans">Delete Account</h3>
+            <p className="text-sm text-secondary leading-relaxed font-sans">
+              Are you absolutely sure you want to delete your account? This will permanently delete your username <span className="text-white font-semibold">folio.in/{config.username}</span>, your projects, experience, skills, custom domains, and all analytics data. This action is irreversible.
+            </p>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-secondary uppercase tracking-wider block font-sans">
+                Type <span className="text-red-400 font-mono">delete my account</span> to confirm
+              </label>
+              <Input 
+                placeholder="delete my account" 
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="border-red-500/20 focus:border-red-500 bg-surface text-white"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeleteConfirmText("")
+                }}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="danger" 
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText.toLowerCase() !== "delete my account" || deleting}
+                className="bg-red-500 hover:bg-red-600 text-white font-bold"
+              >
+                {deleting ? "Deleting..." : "Permanently Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

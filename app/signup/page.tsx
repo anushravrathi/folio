@@ -25,36 +25,48 @@ function SignupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const claimedUsername = searchParams.get('username') || ''
+  const redirectTo = searchParams.get('redirect') || ''
 
   // Redirect if already logged in
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        // Check if user has a profile with username
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (profile?.username) {
-          router.push('/dashboard')
-        } else {
-          router.push(`/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}`)
+        // Check if user has a profile with username via secure API
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          const checkRes = await fetch(`/api/check-onboarding?userId=${user.id}`, {
+            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          })
+          if (checkRes.ok) {
+            const checkData = await checkRes.json()
+            if (checkData.onboarded) {
+              router.push(redirectTo || '/dashboard')
+            } else {
+              const onboardingDest = `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}${redirectTo ? `${claimedUsername ? '&' : '?'}redirect=${encodeURIComponent(redirectTo)}` : ''}`
+              router.push(onboardingDest)
+            }
+          } else {
+            const onboardingDest = `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}${redirectTo ? `${claimedUsername ? '&' : '?'}redirect=${encodeURIComponent(redirectTo)}` : ''}`
+            router.push(onboardingDest)
+          }
+        } catch {
+          const onboardingDest = `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}${redirectTo ? `${claimedUsername ? '&' : '?'}redirect=${encodeURIComponent(redirectTo)}` : ''}`
+          router.push(onboardingDest)
         }
         return
       }
       setCheckingAuth(false)
     }
     checkAuth()
-  }, [router, claimedUsername])
+  }, [router, claimedUsername, redirectTo])
 
   const handleGithubSignup = async () => {
+    const onboardingDest = `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}${redirectTo ? `${claimedUsername ? '&' : '?'}redirect=${encodeURIComponent(redirectTo)}` : ''}`
     await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: window.location.origin + `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}`
+        redirectTo: window.location.origin + onboardingDest
       }
     })
   }
@@ -64,11 +76,13 @@ function SignupContent() {
     setLoading(true)
     setMessage("")
     
+    const onboardingDest = `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}${redirectTo ? `${claimedUsername ? '&' : '?'}redirect=${encodeURIComponent(redirectTo)}` : ''}`
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin + `/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}`,
+        emailRedirectTo: window.location.origin + onboardingDest,
       }
     })
 
@@ -78,7 +92,7 @@ function SignupContent() {
       setMessage("An account with this email already exists. Try logging in instead.")
     } else if (data.session) {
       // No email confirmation required — redirect to onboarding
-      router.push(`/onboarding${claimedUsername ? `?username=${claimedUsername}` : ''}`)
+      router.push(onboardingDest)
     } else {
       setMessage("Check your email to confirm your account, then log in.")
     }
@@ -177,7 +191,7 @@ function SignupContent() {
         </Card>
         
         <p className="text-center mt-8 text-sm text-tertiary">
-          Already have an account? <Link href="/login" className="text-white hover:underline">Log in</Link>
+          Already have an account? <Link href={`/login${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="text-white hover:underline">Log in</Link>
         </p>
 
         <p className="text-center mt-4 text-[11px] text-tertiary leading-relaxed">

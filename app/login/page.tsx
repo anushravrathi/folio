@@ -4,47 +4,69 @@ import { Button } from "@/components/ui/Button"
 import { Card } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
 import { Mail, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-page flex items-center justify-center"><div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"></div></div>}>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
   const [checkingAuth, setCheckingAuth] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || ''
 
   // Redirect if already logged in
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        // Check if user has a profile with username
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (profile?.username) {
-          router.push('/dashboard')
-        } else {
-          router.push('/onboarding')
+        // If there's a redirect, check if they are onboarded first!
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          const checkRes = await fetch(`/api/check-onboarding?userId=${user.id}`, {
+            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          })
+          if (checkRes.ok) {
+            const checkData = await checkRes.json()
+            if (!checkData.onboarded) {
+              // Not onboarded yet! Send to onboarding with the redirect param!
+              router.push(`/onboarding?redirect=${encodeURIComponent(redirectTo || '/dashboard')}`)
+              return
+            }
+          }
+        } catch (err) {
+          console.error("Failed to check onboarding in auth useEffect:", err)
         }
+
+        if (redirectTo) {
+          router.push(redirectTo)
+          return
+        }
+        router.push('/dashboard')
         return
       }
       setCheckingAuth(false)
     }
     checkAuth()
-  }, [router])
+  }, [router, redirectTo])
 
   const handleGithubLogin = async () => {
+    const destination = redirectTo || '/dashboard'
     await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
-        redirectTo: window.location.origin + '/onboarding'
+        redirectTo: window.location.origin + destination
       }
     })
   }
@@ -62,17 +84,28 @@ export default function LoginPage() {
     if (error) {
       setMessage(error.message)
     } else if (data.user) {
-      // Check if user has a profile with username
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', data.user.id)
-        .maybeSingle()
+      // If there's a redirect, check if they are onboarded first!
+      try {
+        const { data: { session: sess } } = await supabase.auth.getSession()
+        const checkRes = await fetch(`/api/check-onboarding?userId=${data.user.id}`, {
+          headers: { 'Authorization': `Bearer ${sess?.access_token}` }
+        })
+        if (checkRes.ok) {
+          const checkData = await checkRes.json()
+          if (!checkData.onboarded) {
+            // Not onboarded yet! Send to onboarding with the redirect param!
+            router.push(`/onboarding?redirect=${encodeURIComponent(redirectTo || '/dashboard')}`)
+            return
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check onboarding in handleEmailLogin:", err)
+      }
 
-      if (profile?.username) {
-        router.push('/dashboard')
+      if (redirectTo) {
+        router.push(redirectTo)
       } else {
-        router.push('/onboarding')
+        router.push('/dashboard')
       }
     }
     setLoading(false)
@@ -165,7 +198,7 @@ export default function LoginPage() {
         </Card>
         
         <p className="text-center mt-8 text-sm text-tertiary">
-          Don&apos;t have an account? <Link href="/signup" className="text-white hover:underline">Sign up</Link>
+          Don&apos;t have an account? <Link href={`/signup${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="text-white hover:underline">Sign up</Link>
         </p>
 
         <p className="text-center mt-4 text-[11px] text-tertiary leading-relaxed">

@@ -1,18 +1,25 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseServer';
+import { supabaseAdmin, verifyUser, unauthorizedResponse, forbiddenResponse } from '@/lib/supabaseServer';
 
 export async function POST(req: Request) {
   try {
+    // Verify authentication
+    const verifiedUserId = await verifyUser(req);
+    if (!verifiedUserId) return unauthorizedResponse();
+
     const { config } = await req.json();
     const { 
       id: userId, username, name, title, location, bio, avatarUrl, cvUrl, email,
-      isPro, theme, openToWork, socialLinks, leetcodeUsername, 
+      isPro, theme, openToWork, socialLinks, githubUsername, leetcodeUsername, 
       skills, experiences, projects, education 
     } = config;
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'User ID is required' }, { status: 400 });
     }
+
+    // Ensure user can only save their own config
+    if (verifiedUserId !== userId) return forbiddenResponse();
 
     // 1. Update Profile
     const { error: profileError } = await supabaseAdmin
@@ -28,6 +35,18 @@ export async function POST(req: Request) {
         is_pro: isPro,
         theme,
         open_to_work: openToWork,
+        cv_url: cvUrl || '',
+        email: email || '',
+        custom_domain: config.customDomain || '',
+        education_degree: education?.degree || '',
+        education_school: education?.school || '',
+        education_cgpa: education?.cgpa || '',
+        education_year: education?.year || '',
+        spotify_track_url: config.spotifyTrackUrl || '',
+        spotify_data: config.spotifyData || null,
+        show_github_activity: config.showGithubActivity ?? true,
+        is_deployed: true,
+        deployed_at: new Date().toISOString(),
       });
 
     if (profileError) throw profileError;
@@ -37,7 +56,7 @@ export async function POST(req: Request) {
       .from('social_links')
       .upsert({
         id: userId,
-        github: socialLinks?.github || '',
+        github: githubUsername || socialLinks?.github || '',
         linkedin: socialLinks?.linkedin || '',
         twitter: socialLinks?.twitter || '',
         leetcode: leetcodeUsername || '',

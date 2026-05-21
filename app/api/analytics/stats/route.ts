@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseServer';
+import { supabaseAdmin, verifyUser, unauthorizedResponse, forbiddenResponse } from '@/lib/supabaseServer';
 
 export async function GET(req: Request) {
   try {
+    // Verify authentication
+    const verifiedUserId = await verifyUser(req);
+    if (!verifiedUserId) return unauthorizedResponse();
+
     const { searchParams } = new URL(req.url);
     const profileId = searchParams.get('profile_id');
     const period = searchParams.get('period') || '7d';
@@ -10,6 +14,9 @@ export async function GET(req: Request) {
     if (!profileId) {
       return NextResponse.json({ error: 'profile_id is required' }, { status: 400 });
     }
+
+    // Ensure user can only view their own analytics
+    if (verifiedUserId !== profileId) return forbiddenResponse();
 
     // Check if user is pro
     const { data: profile } = await supabaseAdmin

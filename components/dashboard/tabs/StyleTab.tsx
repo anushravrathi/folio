@@ -8,10 +8,11 @@ export function StyleTab() {
   const { config, updateConfig } = useDashboardContext()
   
   const themes = [
-    { id: "default" as const, name: "Vapor Purple", color: "#6C63FF", secondary: "#3B82F6" },
-    { id: "emerald" as const, name: "Emerald Coast", color: "#10B981", secondary: "#064E3B" },
-    { id: "sunset" as const, name: "Solar Sunset", color: "#F59E0B", secondary: "#9D174D" },
-    { id: "rose" as const, name: "Rose Velvet", color: "#E11D48", secondary: "#4C0519" },
+    { id: "default" as const, name: "Vapor Purple", color: "#6C63FF", secondary: "#3B82F6", desc: "Dark Mode Mesh" },
+    { id: "emerald" as const, name: "Emerald Coast", color: "#10B981", secondary: "#064E3B", desc: "Dark Mode Mesh" },
+    { id: "sunset" as const, name: "Solar Sunset", color: "#F59E0B", secondary: "#9D174D", desc: "Dark Mode Mesh" },
+    { id: "rose" as const, name: "Rose Velvet", color: "#E11D48", secondary: "#4C0519", desc: "Dark Mode Mesh" },
+    { id: "playful" as const, name: "Playful Parchment", color: "#6366F1", secondary: "#EC4899", desc: "Playful Light Theme" },
   ]
 
   return (
@@ -52,7 +53,7 @@ export function StyleTab() {
                      {t.name}
                    </span>
                    <span className="text-[10px] font-medium text-tertiary relative z-10 mt-0.5 uppercase tracking-wider">
-                     Dark Mode Mesh
+                     {t.desc}
                    </span>
                  </button>
                )

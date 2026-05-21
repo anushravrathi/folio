@@ -1,11 +1,46 @@
+import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
-import { Camera } from "lucide-react"
+import { Camera, Loader2 } from "lucide-react"
 
 import { useDashboardContext } from "@/context/DashboardContext"
+import { supabase } from "@/lib/supabaseClient"
 
 export function HeaderSection() {
   const { config, updateConfig } = useDashboardContext()
+  const [uploading, setUploading] = useState(false)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !config?.id) return
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('bucket', 'avatars')
+      formData.append('userId', config.id)
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.success && data.url) {
+        updateConfig({ avatarUrl: data.url })
+      } else {
+        console.error('Avatar upload failed:', data.error)
+      }
+    } catch (err) {
+      console.error('Avatar upload error:', err)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   return (
     <Card className="border-border-subtle bg-surface/30">
@@ -29,24 +64,23 @@ export function HeaderSection() {
                 <input 
                   type="file" 
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      const reader = new FileReader()
-                      reader.onloadend = () => {
-                        updateConfig({ avatarUrl: reader.result as string })
-                      }
-                      reader.readAsDataURL(file)
-                    }
-                  }}
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
                   className="hidden"
                   id="avatar-upload"
                 />
                 <label 
                   htmlFor="avatar-upload" 
-                  className="bg-surface hover:bg-surface/80 border border-border-subtle px-3 py-1.5 rounded-md text-xs cursor-pointer transition-colors"
+                  className={`bg-surface hover:bg-surface/80 border border-border-subtle px-3 py-1.5 rounded-md text-xs cursor-pointer transition-colors flex items-center gap-1.5 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
                 >
-                  Upload Image
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin text-accent" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Image'
+                  )}
                 </label>
                 <span className="text-[10px] text-tertiary">or</span>
                 <Input 
@@ -54,6 +88,7 @@ export function HeaderSection() {
                   value={config.avatarUrl}
                   onChange={(e) => updateConfig({ avatarUrl: e.target.value })}
                   className="h-8 text-xs bg-surface flex-1"
+                  disabled={uploading}
                 />
               </div>
             </div>
@@ -89,7 +124,12 @@ export function HeaderSection() {
           </div>
           <div className="space-y-2">
             <label className="text-xs font-medium text-secondary uppercase tracking-wider">Email</label>
-            <Input type="email" placeholder="john@example.com" />
+            <Input 
+              type="email" 
+              placeholder="john@example.com" 
+              value={config.email}
+              onChange={(e) => updateConfig({ email: e.target.value })}
+            />
           </div>
         </div>
 

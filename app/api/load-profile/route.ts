@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseServer';
+import { supabaseAdmin, verifyUser, unauthorizedResponse, forbiddenResponse } from '@/lib/supabaseServer';
 
 export async function GET(req: Request) {
   try {
+    // Verify authentication
+    const verifiedUserId = await verifyUser(req);
+    if (!verifiedUserId) return unauthorizedResponse();
+
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
+
+    // Ensure user can only load their own profile
+    if (verifiedUserId !== userId) return forbiddenResponse();
 
     // Load profile and related tables using admin key (bypassing RLS client-side limitations)
     const { data: profile, error } = await supabaseAdmin

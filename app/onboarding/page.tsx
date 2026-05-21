@@ -28,6 +28,7 @@ function OnboardingContent() {
   const [authLoading, setAuthLoading] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || ''
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   // Check auth state and existing profile
@@ -43,12 +44,15 @@ function OnboardingContent() {
       setUserId(user.id)
 
       // Check if user already has a profile with username via secure server API
-      const checkRes = await fetch(`/api/check-onboarding?userId=${user.id}`)
+      const { data: { session } } = await supabase.auth.getSession()
+      const checkRes = await fetch(`/api/check-onboarding?userId=${user.id}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      })
       if (checkRes.ok) {
         const checkData = await checkRes.json()
         if (checkData.onboarded) {
-          // Already onboarded, go to dashboard
-          router.push('/dashboard')
+          // Already onboarded, go to dashboard or redirect
+          router.push(redirectTo || '/dashboard')
           return
         }
       }
@@ -103,9 +107,13 @@ function OnboardingContent() {
 
     setLoading(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/claim-username', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           userId,
           username: username.toLowerCase().trim(),
@@ -116,7 +124,7 @@ function OnboardingContent() {
 
       const data = await res.json()
       if (data.success) {
-        router.push('/dashboard')
+        router.push(redirectTo || '/dashboard')
       } else {
         setReason(data.error || 'Failed to claim username')
         setAvailable(false)

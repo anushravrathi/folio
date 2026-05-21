@@ -211,6 +211,12 @@ export function ExperienceSection() {
               />
               I currently work here
             </label>
+            <textarea
+              placeholder="Role Description (e.g. Led redesign of core features, used Next.js, React, Node.js)"
+              value={newEx.description}
+              onChange={(e) => setNewEx({ ...newEx, description: e.target.value })}
+              className="w-full min-h-[80px] rounded-[var(--radius-btn)] border border-border-subtle bg-surface px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:outline-none focus:border-accent resize-y"
+            />
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="ghost" size="sm" onClick={handleCancel}>
                 Cancel

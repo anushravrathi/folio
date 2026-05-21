@@ -10,6 +10,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
+    // Read User-Agent and skip database insertion for bots/crawlers
+    const userAgent = req.headers.get("user-agent") || ""
+    const isBot = /bot|crawler|spider|crawling|lighthouse|headless|curl|wget/i.test(userAgent)
+
+    if (isBot) {
+      return NextResponse.json({ success: true, skipped: true })
+    }
+
     if (type === 'view') {
       const { error } = await supabaseAdmin.from('page_views').insert({ 
         profile_id, 

@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseServer';
+import { supabaseAdmin, verifyUser, unauthorizedResponse, forbiddenResponse } from '@/lib/supabaseServer';
 
 export async function POST(req: Request) {
   try {
+    // Verify authentication
+    const verifiedUserId = await verifyUser(req);
+    if (!verifiedUserId) return unauthorizedResponse();
+
     const { username, fullName, title, userId } = await req.json();
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
     }
+
+    // Ensure user can only claim a username for themselves
+    if (verifiedUserId !== userId) return forbiddenResponse();
 
     if (!username || username.length < 3 || username.length > 20) {
       return NextResponse.json({ success: false, error: 'Invalid username' }, { status: 400 });
