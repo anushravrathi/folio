@@ -4,11 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 // Next.js 16 uses a server runtime for most API routes, so we expose the variables as
 // NEXT_PUBLIC_ prefixes for any client‑side usage (e.g., auth flow) and keep the secret
 // version for server‑only contexts.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase environment variables are missing. The client will not function correctly.');
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.warn('Supabase environment variables are missing. Using placeholder keys for build-time evaluation.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
