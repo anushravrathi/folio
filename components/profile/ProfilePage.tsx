@@ -123,8 +123,8 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
   const handleShare = useCallback(async (method: string) => {
     if (!isPreview) trackAnalytics(profileId, 'share', { method })
     
-    const shareUrl = username ? `https://tryfolio.online/${username}` : window.location.href
-    const shareText = `Check out ${name}'s portfolio on Folio!`
+    const shareUrl = username ? `https://www.tryfolio.online/${username}` : window.location.href
+    const shareText = `Here's my Folio!`
 
     switch (method) {
       case 'native':
