@@ -40,12 +40,34 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const { data, error } = await supabaseAdmin.storage
+    let { data, error } = await supabaseAdmin.storage
       .from(bucket)
       .upload(fileName, buffer, {
         contentType: file.type,
         upsert: true,
       })
+
+    // If the bucket does not exist, automatically create it as a public bucket and retry
+    if (error && error.message?.includes('Bucket not found')) {
+      console.warn(`Bucket '${bucket}' not found in Supabase Storage. Programmatically creating it...`)
+      const { error: createError } = await supabaseAdmin.storage.createBucket(bucket, {
+        public: true,
+        allowedMimeTypes: bucket === 'avatars' ? ['image/*'] : ['application/pdf'],
+      })
+      if (!createError) {
+        console.log(`Successfully created bucket '${bucket}'. Retrying file upload...`)
+        const retryResult = await supabaseAdmin.storage
+          .from(bucket)
+          .upload(fileName, buffer, {
+            contentType: file.type,
+            upsert: true,
+          })
+        data = retryResult.data
+        error = retryResult.error
+      } else {
+        console.error(`Failed to programmatically create bucket '${bucket}':`, createError)
+      }
+    }
 
     if (error) {
       console.error('Supabase Storage SDK Error:', error)

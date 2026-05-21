@@ -10,6 +10,7 @@ export interface Experience {
   endMonth?: string
   isCurrent: boolean
   description: string
+  type?: string
 }
 
 export interface Project {
@@ -191,6 +192,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           endMonth: ex.end_month,
           isCurrent: ex.is_current,
           description: ex.description || '',
+          type: ex.type || 'fulltime',
         })) || [],
         projects: profile.projects?.map((p: any) => ({
           name: p.name,

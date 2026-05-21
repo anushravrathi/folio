@@ -77,7 +77,9 @@ export function ExperienceCard({
                 Present
               </Badge>
             ) : (
-              <Badge variant={getBadgeVariant(type) as any}>{type}</Badge>
+              <Badge variant={getBadgeVariant(type) as any}>
+                {type === "fulltime" ? "Full-time" : type === "parttime" ? "Part-time" : type.charAt(0).toUpperCase() + type.slice(1)}
+              </Badge>
             )}
           </div>
         </div>

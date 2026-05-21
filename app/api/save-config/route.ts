@@ -145,6 +145,7 @@ export async function POST(req: Request) {
         end_month: ex.endMonth,
         is_current: ex.isCurrent,
         description: ex.description,
+        type: ex.type || 'fulltime',
         sort_order: i,
       }));
       const { error: expError } = await supabaseAdmin.from('experience').insert(expData);

@@ -69,7 +69,7 @@ function SortableExItem({ id, index, ex, onEdit, onRemove }: SortableItemProps) 
       <div className="flex-1 min-w-0">
         <p className="font-bold text-sm text-white truncate">{ex.company}</p>
         <p className="text-tertiary text-xs truncate">
-          {ex.role} • {ex.startMonth}
+          {ex.role} • {ex.type ? (ex.type === 'fulltime' ? 'Full-time' : ex.type === 'parttime' ? 'Part-time' : ex.type.charAt(0).toUpperCase() + ex.type.slice(1)) : 'Full-time'} • {ex.startMonth}
         </p>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -101,6 +101,7 @@ export function ExperienceSection() {
     endMonth: "",
     isCurrent: false,
     description: "",
+    type: "fulltime",
   })
 
   const sensors = useSensors(
@@ -121,12 +122,15 @@ export function ExperienceSection() {
     } else {
       updateConfig({ experiences: [...config.experiences, formattedEx] })
     }
-    setNewEx({ company: "", role: "", startMonth: "", endMonth: "", isCurrent: false, description: "" })
+    setNewEx({ company: "", role: "", startMonth: "", endMonth: "", isCurrent: false, description: "", type: "fulltime" })
     setIsAdding(false)
   }
 
   const editEx = (index: number) => {
-    setNewEx(config.experiences[index])
+    setNewEx({
+      type: "fulltime",
+      ...config.experiences[index]
+    })
     setEditingIndex(index)
     setIsAdding(true)
   }
@@ -138,7 +142,7 @@ export function ExperienceSection() {
   const handleCancel = () => {
     setIsAdding(false)
     setEditingIndex(null)
-    setNewEx({ company: "", role: "", startMonth: "", endMonth: "", isCurrent: false, description: "" })
+    setNewEx({ company: "", role: "", startMonth: "", endMonth: "", isCurrent: false, description: "", type: "fulltime" })
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -209,8 +213,36 @@ export function ExperienceSection() {
                 }
                 className="rounded border-white/20 bg-surface/50 text-accent focus:ring-accent"
               />
-              I currently work here
             </label>
+            
+            <div className="space-y-1.5 my-1">
+              <label className="text-[11px] font-bold text-tertiary uppercase tracking-wider">Job Type</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: "fulltime", label: "Full-time" },
+                  { value: "internship", label: "Internship" },
+                  { value: "parttime", label: "Part-time" },
+                  { value: "freelance", label: "Freelance" }
+                ].map((option) => {
+                  const isSelected = (newEx.type || "fulltime") === option.value
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setNewEx({ ...newEx, type: option.value })}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                        isSelected
+                          ? "bg-accent/15 border-accent text-accent"
+                          : "bg-surface border-border-subtle text-secondary hover:border-accent/40 hover:text-primary"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             <textarea
               placeholder="Role Description (e.g. Led redesign of core features, used Next.js, React, Node.js)"
               value={newEx.description}

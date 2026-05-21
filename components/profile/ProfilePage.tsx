@@ -454,7 +454,7 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
                     key={i}
                     companyName={ex.company_name || ex.company}
                     role={ex.role}
-                    type={ex.type || "Full-time"}
+                    type={ex.type || "fulltime"}
                     startMonth={ex.start_month || ex.startMonth}
                     endMonth={ex.end_month || ex.endMonth}
                     isCurrent={ex.is_current || ex.isCurrent}
