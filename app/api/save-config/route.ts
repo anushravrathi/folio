@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, verifyUser, unauthorizedResponse, forbiddenResponse } from '@/lib/supabaseServer';
+import { cleanDomain, isValidDomain } from '@/lib/utils';
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
     const { config } = await req.json();
     const { 
       id: userId, username, name, title, location, bio, avatarUrl, cvUrl, email,
-      isPro, theme, openToWork, socialLinks, githubUsername, leetcodeUsername, 
+      theme, openToWork, socialLinks, githubUsername, leetcodeUsername, 
       skills, experiences, projects, education 
     } = config;
 
@@ -20,6 +21,63 @@ export async function POST(req: Request) {
 
     // Ensure user can only save their own config
     if (verifiedUserId !== userId) return forbiddenResponse();
+
+    // Fetch the user's true DB pro status first (do not trust isPro from the request)
+    const { data: currentProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_pro')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const actualIsPro = currentProfile?.is_pro || false;
+
+    // Validate and clean custom domain
+    let finalCustomDomain = '';
+    if (config.customDomain) {
+      const cleaned = cleanDomain(config.customDomain);
+      if (cleaned) {
+        if (!isValidDomain(cleaned)) {
+          return NextResponse.json({ 
+            success: false, 
+            error: 'Invalid custom domain format. Please enter a valid domain name (e.g. yourname.com).' 
+          }, { status: 400 });
+        }
+
+        // Prevent system domains
+        const systemDomains = ['localhost', 'folio.in', 'www.folio.in', 'tryfolio.online', 'www.tryfolio.online'];
+        if (systemDomains.some(sys => cleaned === sys || cleaned.endsWith('.' + sys))) {
+          return NextResponse.json({ 
+            success: false, 
+            error: 'System domains cannot be registered as custom domains.' 
+          }, { status: 400 });
+        }
+
+        // Enforce Pro status on backend
+        if (!actualIsPro) {
+          return NextResponse.json({ 
+            success: false, 
+            error: 'Custom domains require a Pro subscription. Please upgrade to use this feature.' 
+          }, { status: 403 });
+        }
+
+        // Uniqueness check: ensure no other user has connected this domain
+        const { data: duplicateProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('id, username')
+          .eq('custom_domain', cleaned)
+          .neq('id', userId)
+          .maybeSingle();
+
+        if (duplicateProfile) {
+          return NextResponse.json({ 
+            success: false, 
+            error: 'This custom domain is already connected to another Folio profile.' 
+          }, { status: 400 });
+        }
+
+        finalCustomDomain = cleaned;
+      }
+    }
 
     // 1. Update Profile
     const { error: profileError } = await supabaseAdmin
@@ -32,12 +90,12 @@ export async function POST(req: Request) {
         about: bio,
         location,
         avatar_url: avatarUrl,
-        is_pro: isPro,
+        is_pro: actualIsPro,
         theme,
         open_to_work: openToWork,
         cv_url: cvUrl || '',
         email: email || '',
-        custom_domain: config.customDomain || '',
+        custom_domain: finalCustomDomain,
         education_degree: education?.degree || '',
         education_school: education?.school || '',
         education_cgpa: education?.cgpa || '',

@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // 2. Identify system domains that should not be mapped
-  const systemDomains = ['localhost:3000', 'folio.in', 'www.folio.in']
+  const systemDomains = ['localhost:3000', 'folio.in', 'www.folio.in', 'tryfolio.online', 'www.tryfolio.online']
   const isSystemDomain = systemDomains.some(
     (domain) => host === domain || host.includes(domain)
   )
@@ -35,11 +35,19 @@ export async function middleware(request: NextRequest) {
       if (supabaseUrl && supabaseAnonKey) {
         const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+        // Construct search list for both naked and www. variants of the host
+        const domainsToSearch = [host]
+        if (host.startsWith('www.')) {
+          domainsToSearch.push(host.substring(4))
+        } else {
+          domainsToSearch.push('www.' + host)
+        }
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('username')
-          .eq('custom_domain', host)
-          .single()
+          .in('custom_domain', domainsToSearch)
+          .maybeSingle()
 
         if (profile && profile.username) {
           // Transparently rewrite /path to /[username]/path

@@ -28,7 +28,7 @@ function DashboardContent() {
   const { showToast } = useToast()
 
   const profileUrl = config.username ? `/${config.username}` : '#'
-  const fullUrl = config.username ? `folio.in/${config.username}` : 'folio.in/...'
+  const fullUrl = config.username ? `tryfolio.online/${config.username}` : 'tryfolio.online/...'
 
   const handleDeploy = async () => {
     if (!config.username) {
@@ -123,7 +123,7 @@ function DashboardContent() {
               onClick={handleCopyUrl}
               className="hidden sm:flex items-center gap-2 text-xs font-medium text-secondary bg-elevated/50 px-2.5 py-1 rounded-full border border-border-subtle hover:border-accent/30 hover:text-white transition-all cursor-pointer group"
             >
-              <span>folio.in/</span>
+              <span>tryfolio.online/</span>
               <span className="text-primary font-semibold">{config.username}</span>
               <Copy className="w-3 h-3 text-tertiary group-hover:text-accent transition-colors" />
             </button>

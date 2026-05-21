@@ -10,6 +10,8 @@ import { useToast } from "@/context/ToastContext"
 import { useState, useCallback, useRef, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
+import { cleanDomain, isValidDomain } from "@/lib/utils"
+
 
 export function SettingsTab() {
   const { config, updateConfig } = useDashboardContext()
@@ -17,8 +19,12 @@ export function SettingsTab() {
   const isPro = config.isPro || false
   const router = useRouter()
 
-  // Custom Domain input state
+  // Custom Domain input and DNS verification states
   const [customDomainInput, setCustomDomainInput] = useState(config.customDomain || "")
+  const [dnsVerified, setDnsVerified] = useState(false)
+  const [verifyingDns, setVerifyingDns] = useState(false)
+  const [dnsError, setDnsError] = useState<string | null>(null)
+  const [foundRecords, setFoundRecords] = useState<{ A: string[]; CNAME: string[] } | null>(null)
 
   // Delete account states
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -27,12 +33,67 @@ export function SettingsTab() {
 
   useEffect(() => {
     setCustomDomainInput(config.customDomain || "")
+    setDnsVerified(false)
+    setDnsError(null)
+    setFoundRecords(null)
   }, [config.customDomain])
 
   const handleSaveCustomDomain = () => {
-    updateConfig({ customDomain: customDomainInput })
+    const cleaned = cleanDomain(customDomainInput)
+    if (customDomainInput && !cleaned) {
+      showToast("Invalid custom domain format. Please enter a valid domain name (e.g. yourname.com).", "error")
+      return
+    }
+
+    const systemDomains = ['localhost', 'folio.in', 'www.folio.in', 'tryfolio.online', 'www.tryfolio.online']
+    if (cleaned && systemDomains.some(sys => cleaned === sys || cleaned.endsWith('.' + sys))) {
+      showToast("System domains cannot be registered as custom domains.", "error")
+      return
+    }
+
+    setCustomDomainInput(cleaned)
+    updateConfig({ customDomain: cleaned })
     showToast("Custom domain setting updated! Please deploy to save changes permanently.", "success")
   }
+
+  const handleVerifyDns = async () => {
+    if (!config.customDomain) return
+    setVerifyingDns(true)
+    setDnsError(null)
+    setFoundRecords(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/verify-dns?domain=${encodeURIComponent(config.customDomain)}`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
+      const data = await res.json()
+      if (data.success) {
+        if (data.verified) {
+          setDnsVerified(true)
+          showToast("🎉 DNS records successfully verified and connected!", "success")
+        } else {
+          setDnsVerified(false)
+          setFoundRecords(data.records)
+          setDnsError("We couldn't verify your DNS records yet. Please double-check your DNS provider settings.")
+          showToast("DNS verification pending. See instructions below.", "info")
+        }
+      } else {
+        setDnsVerified(false)
+        setDnsError(data.error || "Failed to query DNS records.")
+        showToast(data.error || "DNS verification failed.", "error")
+      }
+    } catch (err) {
+      setDnsVerified(false)
+      setDnsError("Network error occurred during DNS verification.")
+      showToast("Network error. Please try again.", "error")
+    } finally {
+      setVerifyingDns(false)
+    }
+  }
+
+
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText.toLowerCase() !== "delete my account") {
@@ -153,7 +214,7 @@ export function SettingsTab() {
   }
 
   const handleCopyUrl = async () => {
-    const url = `https://folio.in/${config.username}`
+    const url = `https://tryfolio.online/${config.username}`
     try {
       await navigator.clipboard.writeText(url)
       showToast('URL copied to clipboard!', 'success')
@@ -296,7 +357,7 @@ export function SettingsTab() {
           <div className="space-y-2">
             <label className="text-xs font-medium text-secondary uppercase tracking-wider">Your Public URL</label>
             <div className="flex items-center justify-between p-3 rounded-[var(--radius-btn)] border border-border-subtle bg-elevated">
-              <span className="text-sm text-primary">folio.in/{config.username || '...'}</span>
+              <span className="text-sm text-primary">tryfolio.online/{config.username || '...'}</span>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -334,7 +395,107 @@ export function SettingsTab() {
             {!isPro && (
               <p className="text-xs text-tertiary mt-1.5">Upgrade to Pro to use a custom domain.</p>
             )}
+
+            {isPro && config.customDomain && (
+              <div className="mt-4 p-4 rounded-xl border border-border-subtle bg-elevated/40 space-y-4 animate-fade-in font-sans">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">DNS Setup Instructions</h4>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${dnsVerified ? 'bg-success/10 text-success border-success/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse'}`}>
+                    {dnsVerified ? 'Connected' : 'Setup Pending'}
+                  </span>
+                </div>
+                
+                <p className="text-xs text-secondary leading-relaxed">
+                  To point your custom domain <strong className="text-white font-mono">{config.customDomain}</strong> to Folio, log in to your DNS provider (e.g., GoDaddy, Namecheap, Cloudflare) and add the following records:
+                </p>
+
+                <div className="overflow-x-auto rounded-lg border border-border-subtle/50 bg-surface/50">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border-subtle/30 bg-surface/80 text-secondary font-semibold">
+                        <th className="p-2">Type</th>
+                        <th className="p-2">Name / Host</th>
+                        <th className="p-2">Value / Points To</th>
+                        <th className="p-2 text-right">TTL</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-subtle/20 font-mono text-[11px] text-primary">
+                      <tr>
+                        <td className="p-2 font-sans font-bold text-accent">A</td>
+                        <td className="p-2">@</td>
+                        <td className="p-2">76.76.21.21</td>
+                        <td className="p-2 text-right font-sans text-secondary">Automatic</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 font-sans font-bold text-accent">CNAME</td>
+                        <td className="p-2">www</td>
+                        <td className="p-2">cname.vercel-dns.com</td>
+                        <td className="p-2 text-right font-sans text-secondary">Automatic</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                  <Button
+                    size="sm"
+                    variant={dnsVerified ? "ghost" : "secondary"}
+                    disabled={verifyingDns || dnsVerified}
+                    onClick={handleVerifyDns}
+                    className="h-8 gap-1.5 text-xs font-semibold"
+                  >
+                    {verifyingDns ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Verifying records...
+                      </>
+                    ) : dnsVerified ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-success" />
+                        DNS Verified
+                      </>
+                    ) : (
+                      'Verify DNS Connection'
+                    )}
+                  </Button>
+                  
+                  {!dnsVerified && (
+                    <p className="text-[10px] text-tertiary self-center font-sans">
+                      Note: DNS changes can take up to 24 hours to propagate.
+                    </p>
+                  )}
+                </div>
+
+                {dnsError && (
+                  <div className="p-3.5 rounded-lg border border-red-500/20 bg-red-500/5 space-y-2 animate-fade-in font-sans text-xs">
+                    <p className="font-semibold text-red-400">{dnsError}</p>
+                    {foundRecords && (
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-medium text-secondary">Current Records Resolved:</p>
+                        <ul className="list-disc pl-4 space-y-1 font-mono text-[10px] text-tertiary">
+                          <li>
+                            A Records found: {foundRecords.A.length > 0 ? (
+                              <span className="text-red-300 font-bold">{foundRecords.A.join(', ')}</span>
+                            ) : (
+                              <span className="italic text-tertiary">None</span>
+                            )} (Expected: <span className="text-success font-bold">76.76.21.21</span>)
+                          </li>
+                          <li>
+                            CNAME Records found: {foundRecords.CNAME.length > 0 ? (
+                              <span className="text-red-300 font-bold">{foundRecords.CNAME.join(', ')}</span>
+                            ) : (
+                              <span className="italic text-tertiary">None</span>
+                            )} (Expected: <span className="text-success font-bold">cname.vercel-dns.com</span>)
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
 
         </CardContent>
       </Card>
@@ -393,7 +554,7 @@ export function SettingsTab() {
           <div className="w-full max-w-md p-6 rounded-2xl border border-red-500/20 bg-elevated shadow-2xl space-y-4 m-4">
             <h3 className="text-lg font-bold text-white font-sans">Delete Account</h3>
             <p className="text-sm text-secondary leading-relaxed font-sans">
-              Are you absolutely sure you want to delete your account? This will permanently delete your username <span className="text-white font-semibold">folio.in/{config.username}</span>, your projects, experience, skills, custom domains, and all analytics data. This action is irreversible.
+              Are you absolutely sure you want to delete your account? This will permanently delete your username <span className="text-white font-semibold">tryfolio.online/{config.username}</span>, your projects, experience, skills, custom domains, and all analytics data. This action is irreversible.
             </p>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-secondary uppercase tracking-wider block font-sans">

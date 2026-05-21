@@ -119,7 +119,7 @@ function SignupContent() {
           <h1 className="text-2xl font-semibold text-white mb-2">Create your account</h1>
           <p className="text-secondary">
             {claimedUsername 
-              ? <>Claim <span className="text-accent font-semibold">folio.in/{claimedUsername}</span> — sign up first</>
+              ? <>Claim <span className="text-accent font-semibold">tryfolio.online/{claimedUsername}</span> — sign up first</>
               : "Start building your profile today"
             }
           </p>

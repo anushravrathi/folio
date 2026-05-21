@@ -178,7 +178,7 @@ function OnboardingContent() {
               </label>
               <div className="relative">
                 <div className="flex items-center rounded-xl border border-border-subtle bg-elevated overflow-hidden focus-within:border-accent/50 focus-within:shadow-[0_0_0_3px_rgba(124,111,255,0.1)] transition-all">
-                  <span className="pl-4 text-secondary text-sm font-medium select-none shrink-0">folio.in/</span>
+                  <span className="pl-4 text-secondary text-sm font-medium select-none shrink-0">tryfolio.online/</span>
                   <input
                     id="username"
                     type="text"

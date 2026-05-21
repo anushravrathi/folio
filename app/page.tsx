@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
 import { Card } from "@/components/ui/Card"
 import { Input } from "@/components/ui/Input"
-import { ArrowRight, CheckCircle2, Zap, Link as LinkIcon, BarChart3, Star, Code, Trophy, UserCheck, Globe, Check, X, Loader2 } from "lucide-react"
+import { ArrowRight, CheckCircle2, Zap, Link as LinkIcon, BarChart3, Star, Code, Trophy, UserCheck, Globe, Check, X, Loader2, Mail } from "lucide-react"
 import { useState, useRef, useCallback, useEffect, Suspense } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useSearchParams } from "next/navigation"
@@ -436,9 +436,9 @@ function LandingContent() {
               <div className="absolute -inset-1 bg-gradient-to-r from-accent via-[#A855F7] to-accent rounded-[24px] opacity-20 group-hover:opacity-40 blur-xl transition-opacity duration-500"></div>
               <div className="relative flex items-center p-1.5 sm:p-2 rounded-[22px] border border-white/15 bg-[#0F0F0F] shadow-2xl backdrop-blur-xl">
                 <div className="pl-4 sm:pl-5 text-secondary text-[15px] font-medium tracking-wide pointer-events-none select-none hidden sm:block">
-                  folio.in/
+                  tryfolio.online/
                 </div>
-                <div className="pl-4 text-secondary text-sm font-medium sm:hidden">f.in/</div>
+                <div className="pl-4 text-secondary text-sm font-medium sm:hidden">tryfolio/</div>
                 <div className="flex-1 relative min-w-0">
                   <input
                     type="text"
@@ -461,7 +461,7 @@ function LandingContent() {
                 </Link>
               </div>
               <p className="mt-4 text-[13px] text-tertiary font-medium">
-                 {available === true && claimUsername ? <span className="text-success">✓ folio.in/{claimUsername} is available!</span> : '✨ 100% free. Takes less than 2 minutes.'}
+                 {available === true && claimUsername ? <span className="text-success">✓ tryfolio.online/{claimUsername} is available!</span> : '✨ 100% free. Takes less than 2 minutes.'}
               </p>
             </div>
           )}
@@ -482,10 +482,10 @@ function LandingContent() {
                     <div className="w-3 h-3 rounded-full bg-[#27C93F] shadow-inner" />
                   </div>
                   <div className="flex-1 max-w-sm mx-auto">
-                    <div className="h-7 rounded-lg bg-black/40 border border-white/5 flex items-center justify-center px-3 gap-2">
-                       <Zap className="w-3 h-3 text-success fill-success" />
-                       <span className="text-[11px] font-medium text-secondary tracking-wide">folio.in/yourname</span>
-                    </div>
+                     <div className="h-7 rounded-lg bg-black/40 border border-white/5 flex items-center justify-center px-3 gap-2">
+                        <Zap className="w-3 h-3 text-success fill-success" />
+                        <span className="text-[11px] font-medium text-secondary tracking-wide">tryfolio.online/yourname</span>
+                     </div>
                   </div>
                   <div className="w-16 flex justify-end">
                      <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center"><PlusIcon className="w-3 h-3 text-secondary" /></div>
@@ -619,7 +619,7 @@ function LandingContent() {
               </div>
               
               <div className="space-y-4 mb-10 flex-1">
-                {["Full profile customization", "Projects & Experience blocks", "Basic link analytics", "Folio.in subdomain"].map((f, idx) => (
+                {["Full profile customization", "Projects & Experience blocks", "Basic link analytics", "Tryfolio.online subdomain"].map((f, idx) => (
                   <div key={idx} className="flex items-center gap-3">
                      <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center shrink-0">
                         <CheckCircle2 className="w-3 h-3 text-tertiary" />
@@ -770,24 +770,43 @@ function LandingContent() {
               </p>
            </div>
            
-           <div className="grid grid-cols-2 sm:grid-cols-3 gap-12 md:gap-24">
-              <div className="flex flex-col gap-4">
-                 <span className="text-white font-bold text-xs uppercase tracking-widest">Product</span>
-                 <Link href="#features" className="text-tertiary hover:text-white font-medium transition-colors">Features</Link>
-                 <Link href="#pricing" className="text-tertiary hover:text-white font-medium transition-colors">Pricing</Link>
-                 <Link href="#" className="text-tertiary hover:text-white font-medium transition-colors">Changelog</Link>
-              </div>
-              <div className="flex flex-col gap-4">
-                 <span className="text-white font-bold text-xs uppercase tracking-widest">Connect</span>
-                 <Link href="#" className="text-tertiary hover:text-white font-medium transition-colors">Twitter / X</Link>
-                 <Link href="#" className="text-tertiary hover:text-white font-medium transition-colors">GitHub</Link>
-                 <Link href="#" className="text-tertiary hover:text-white font-medium transition-colors">LinkedIn</Link>
-              </div>
-              <div className="flex flex-col gap-4">
-                 <span className="text-white font-bold text-xs uppercase tracking-widest">Legal</span>
-                 <Link href="#" className="text-tertiary hover:text-white font-medium transition-colors">Privacy</Link>
-                 <Link href="#" className="text-tertiary hover:text-white font-medium transition-colors">Terms</Link>
-              </div>
+           <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-8 sm:gap-16 w-full sm:w-auto">
+             {/* Contact/Support Premium Card */}
+             <div className="p-5 rounded-2xl border border-white/5 bg-[#0C0C0C]/50 backdrop-blur-md max-w-sm space-y-4 shadow-xl flex-1 sm:flex-initial sm:min-w-[280px]">
+                <div className="flex items-center gap-3">
+                   <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
+                      <Mail className="w-4.5 h-4.5" />
+                   </div>
+                   <div>
+                      <h4 className="text-white font-bold text-xs uppercase tracking-wider">Contact Us</h4>
+                      <p className="text-tertiary text-[11px]">Get fast help or share feedback</p>
+                   </div>
+                </div>
+                <div className="space-y-3">
+                   <p className="text-secondary text-[13px] leading-relaxed">
+                      Have custom requests or need help setting up your domain? Reach out directly.
+                   </p>
+                   <a 
+                      href="mailto:support@tryfolio.online" 
+                      className="inline-flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-white text-black font-bold text-xs hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all border-0 shadow-md shadow-white/5 cursor-pointer"
+                   >
+                      Email Support
+                      <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                   </a>
+                   <div className="text-center pt-0.5">
+                      <span className="text-[11px] font-mono text-tertiary select-all cursor-pointer hover:text-secondary transition-colors">
+                         support@tryfolio.online
+                      </span>
+                   </div>
+                </div>
+             </div>
+
+             {/* Legal Section */}
+             <div className="flex flex-col gap-4 min-w-[120px] pt-2">
+                <span className="text-white font-bold text-xs uppercase tracking-widest">Legal</span>
+                <Link href="/privacy" className="text-tertiary hover:text-white font-medium transition-colors text-[14px]">Privacy Policy</Link>
+                <Link href="/terms" className="text-tertiary hover:text-white font-medium transition-colors text-[14px]">Terms of Service</Link>
+             </div>
            </div>
         </div>
         <div className="mx-auto max-w-[1200px] px-6 mt-16 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
