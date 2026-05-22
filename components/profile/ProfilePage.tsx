@@ -254,19 +254,26 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
         
         <header className="flex flex-col items-center text-center gap-6">
           <div className="relative group flex flex-col items-center">
-             <div className={`absolute -inset-1 bg-gradient-to-r ${activeTheme.accent} rounded-full opacity-20 blur transition duration-700 group-hover:opacity-50`}></div>
-             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-surface border border-border-subtle overflow-hidden relative shadow-2xl z-10">
-               {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-               ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-surface to-elevated flex items-center justify-center">
-                    <span className="text-3xl font-black text-secondary">{name.substring(0, 2).toUpperCase()}</span>
-                  </div>
-               )}
+             <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-[2.5px] bg-gradient-to-tr from-[var(--color-accent)] to-[#7C6FFF] relative shadow-2xl z-10 transition-transform duration-500 group-hover:rotate-6">
+               <div className="w-full h-full rounded-full bg-page overflow-hidden p-[1px]">
+                 {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                 ) : (
+                    <div className="w-full h-full rounded-full bg-gradient-to-br from-surface to-elevated flex items-center justify-center">
+                      <span className="text-3xl font-black text-secondary">{name.substring(0, 2).toUpperCase()}</span>
+                    </div>
+                 )}
+               </div>
              </div>
              {openToWork && (
                <div className="absolute -bottom-3 z-20">
-                 <Badge variant="openToWork" className="text-[10px] font-extrabold bg-surface border border-accent/30 text-accent tracking-widest uppercase h-6 px-3 shadow-lg shadow-black/10 whitespace-nowrap">OPEN TO WORK</Badge>
+                 <Badge variant="openToWork" className="text-[9px] font-extrabold bg-surface border border-accent/30 text-accent tracking-widest uppercase h-6 px-3 shadow-lg shadow-black/20 whitespace-nowrap flex items-center gap-1.5 hover:border-accent/60 transition-all select-none cursor-default">
+                   <span className="relative flex h-1.5 w-1.5">
+                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+                   </span>
+                   OPEN TO WORK
+                 </Badge>
                </div>
              )}
           </div>
@@ -276,13 +283,14 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
                {name}
                {isPro && (
                  <span 
-                   className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-black uppercase bg-gradient-to-r from-[var(--color-accent)] to-[#7C6FFF] text-white border border-[var(--color-accent)]/20 shadow-[0_0_12px_var(--color-accent-dim)] select-none hover:scale-105 transition-transform duration-300 cursor-default animate-fade-in"
+                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-gradient-to-r from-amber-500/10 via-[var(--color-accent)]/15 to-[#7C6FFF]/10 text-white border border-amber-500/30 shadow-[0_0_15px_rgba(240,180,41,0.15)] select-none hover:scale-105 hover:border-amber-400/50 transition-all duration-300 cursor-default animate-fade-in relative overflow-hidden group"
                    title="Verified Folio Pro Member"
                  >
-                   <svg className="w-3 h-3 text-white fill-current shrink-0" viewBox="0 0 24 24">
+                   <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-border-shine pointer-events-none"></span>
+                   <svg className="w-3.5 h-3.5 text-amber-400 fill-amber-400/30 animate-[pulse_2s_infinite]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                    </svg>
-                   Pro
+                   <span className="bg-gradient-to-r from-white via-white to-amber-200 bg-clip-text text-transparent">Pro</span>
                  </span>
                )}
              </h1>
@@ -311,9 +319,9 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
              {profileEmail && (
                <button 
                  onClick={handleEmailClick}
-                 className="h-11 px-6 bg-surface border border-border-subtle text-primary rounded-xl flex items-center gap-2 text-sm font-bold hover:bg-elevated transition-colors cursor-pointer"
+                 className="h-11 px-6 bg-surface border border-border-subtle hover:border-[var(--color-accent)]/30 text-primary rounded-xl flex items-center gap-2 text-sm font-bold hover:bg-elevated hover:shadow-[0_0_20px_rgba(124,111,255,0.05)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
                >
-                  <Mail className="w-4 h-4" /> Let&apos;s talk
+                  <Mail className="w-4 h-4 text-[var(--color-accent)]" /> Let&apos;s talk
                </button>
              )}
 
@@ -327,9 +335,9 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
                      setActiveShareMenu(activeShareMenu === 'header' ? null : 'header')
                    }
                  }}
-                 className="h-11 px-6 bg-surface border border-border-subtle text-primary rounded-xl flex items-center gap-2 text-sm font-bold hover:bg-elevated transition-colors cursor-pointer"
+                 className="h-11 px-6 bg-surface border border-border-subtle hover:border-[var(--color-accent)]/30 text-primary rounded-xl flex items-center gap-2 text-sm font-bold hover:bg-elevated hover:shadow-[0_0_20px_rgba(124,111,255,0.05)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
                >
-                  <Share2 className="w-4 h-4 text-accent" /> Share Profile
+                  <Share2 className="w-4 h-4 text-[var(--color-accent)]" /> Share Profile
                </button>
 
                {activeShareMenu === 'header' && (
@@ -414,8 +422,8 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
             <section className="space-y-6">
               <div className="flex items-center justify-between">
                  <div className="flex items-center gap-3">
-                    <span className="text-accent font-mono font-bold text-lg">{"< >"}</span>
-                    <h2 className="text-[15px] font-bold tracking-wide text-primary">Featured Projects</h2>
+                    <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-[var(--color-accent)] to-[#7C6FFF] shadow-[0_0_10px_var(--color-accent-dim)]"></div>
+                    <h2 className="text-[15px] font-black uppercase tracking-wider text-primary">Featured Projects</h2>
                  </div>
                   {githubUsername && (
                     <a href={`https://github.com/${githubUsername}`} target="_blank" className="text-[10px] font-bold text-secondary uppercase tracking-widest hover:text-primary transition-colors">View All Github</a>
@@ -460,7 +468,8 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
 
             <section className="space-y-6">
               <div className="flex items-center gap-3">
-                 <h2 className="text-[15px] font-bold tracking-wide text-primary">Experience</h2>
+                 <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-[var(--color-accent)] to-[#7C6FFF] shadow-[0_0_10px_var(--color-accent-dim)]"></div>
+                 <h2 className="text-[15px] font-black uppercase tracking-wider text-primary">Experience</h2>
               </div>
               <div className="space-y-4">
                 {experiences.length > 0 ? experiences.map((ex, i) => (
@@ -485,7 +494,8 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
             {hasEducation && (
               <section className="space-y-6">
                 <div className="flex items-center gap-3">
-                   <h2 className="text-[15px] font-bold tracking-wide text-primary">Education</h2>
+                   <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-[var(--color-accent)] to-[#7C6FFF] shadow-[0_0_10px_var(--color-accent-dim)]"></div>
+                   <h2 className="text-[15px] font-black uppercase tracking-wider text-primary">Education</h2>
                 </div>
                 <div className="bg-surface border border-border-subtle rounded-[20px] p-6 flex flex-col gap-5 relative overflow-hidden">
                     <div>
@@ -518,14 +528,12 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
 
              <section className="bg-surface border border-border-subtle rounded-[20px] p-6">
                 <div className="flex items-center gap-3 mb-5">
-                   <div className="w-5 h-5 rounded-md bg-accent/10 flex items-center justify-center border border-accent/20">
-                     <svg className="w-3 h-3 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                   </div>
-                   <h2 className="text-sm font-bold text-primary tracking-wide">Technical Stack</h2>
+                   <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-[var(--color-accent)] to-[#7C6FFF] shadow-[0_0_10px_var(--color-accent-dim)]"></div>
+                   <h2 className="text-[15px] font-black uppercase tracking-wider text-primary">Technical Stack</h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {skills.map((skill: string, i: number) => (
-                     <div key={i} className="px-3 py-1.5 rounded-lg bg-elevated border border-border-subtle text-[11px] font-bold text-secondary hover:border-accent/20 hover:text-primary cursor-default transition-all">
+                     <div key={i} className="px-3.5 py-1.5 rounded-xl bg-elevated border border-border-subtle text-[11px] font-extrabold text-secondary hover:border-[var(--color-accent)]/30 hover:text-primary hover:bg-[var(--color-accent)]/[0.02] hover:scale-[1.03] cursor-default transition-all duration-200">
                         {skill}
                      </div>
                   ))}
