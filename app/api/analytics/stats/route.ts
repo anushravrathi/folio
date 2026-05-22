@@ -92,19 +92,51 @@ export async function GET(req: Request) {
     // Count shares
     const totalShares = sharesRes.count || 0;
 
-    // Calculate traffic sources
+    // Calculate traffic sources with dynamic host/domain parsing and cleaning
     const views = viewsRes.data || [];
     const sourceMap: Record<string, number> = {};
+    
+    const getCleanSource = (sourceStr: string): string => {
+      if (!sourceStr) return 'Direct';
+      const clean = sourceStr.trim().toLowerCase();
+      if (clean === 'direct' || clean === 'none' || clean === '') return 'Direct';
+
+      // Check common keywords and normalize
+      if (clean.includes('linkedin') || clean.includes('lnkd.in')) return 'LinkedIn';
+      if (clean.includes('twitter') || clean.includes('x.com') || clean.includes('t.co')) return 'Twitter';
+      if (clean.includes('github')) return 'GitHub';
+      if (clean.includes('google')) return 'Google';
+      if (clean.includes('instagram')) return 'Instagram';
+      if (clean.includes('facebook') || clean.includes('fb.com')) return 'Facebook';
+      if (clean.includes('reddit')) return 'Reddit';
+      if (clean.includes('peerlist')) return 'Peerlist';
+      if (clean.includes('producthunt')) return 'Product Hunt';
+      if (clean.includes('ycombinator') || clean.includes('hn.')) return 'Hacker News';
+      if (clean.includes('dev.to')) return 'Dev.to';
+      if (clean.includes('medium')) return 'Medium';
+      if (clean.includes('youtube')) return 'YouTube';
+      if (clean.includes('discord')) return 'Discord';
+
+      // Try parsing as URL to show domain name instead of "Other" or the full URL path
+      try {
+        if (clean.startsWith('http://') || clean.startsWith('https://')) {
+          const url = new URL(clean);
+          let host = url.hostname;
+          if (host.startsWith('www.')) {
+            host = host.substring(4);
+          }
+          return host.charAt(0).toUpperCase() + host.slice(1);
+        }
+      } catch (e) {
+        // Ignore and fall through to direct string formatting
+      }
+
+      // Format custom strings (e.g. "newsletter" -> "Newsletter")
+      return sourceStr.charAt(0).toUpperCase() + sourceStr.slice(1);
+    };
+
     views.forEach(v => {
-      const source = v.source || 'Direct';
-      // Normalize source names
-      let normalizedSource = 'Direct';
-      if (source.includes('linkedin')) normalizedSource = 'LinkedIn';
-      else if (source.includes('twitter') || source.includes('x.com')) normalizedSource = 'Twitter';
-      else if (source.includes('google')) normalizedSource = 'Google';
-      else if (source.includes('github')) normalizedSource = 'GitHub';
-      else if (source !== 'direct' && source !== 'Direct' && source !== '') normalizedSource = 'Other';
-      
+      const normalizedSource = getCleanSource(v.source);
       sourceMap[normalizedSource] = (sourceMap[normalizedSource] || 0) + 1;
     });
 
