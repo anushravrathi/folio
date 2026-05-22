@@ -45,12 +45,12 @@ export function SpotifyWidget({
 
   if (trackId) {
     return (
-      <div className="w-full h-[152px] rounded-[28px] overflow-hidden shadow-[0_20px_50px_-12px_rgba(29,185,84,0.2)] bg-transparent border border-border-subtle transition-all duration-500 hover:scale-[1.02]">
+      <div className="w-full h-[80px] rounded-[12px] overflow-hidden shadow-[0_20px_50px_-12px_rgba(29,185,84,0.2)] bg-transparent border border-border-subtle transition-all duration-500 hover:scale-[1.02]">
         <iframe 
-          style={{ borderRadius: '28px' }}
+          style={{ borderRadius: '12px' }}
           src={`https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`} 
           width="100%" 
-          height="152" 
+          height="80" 
           frameBorder="0" 
           allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
           loading="lazy"
