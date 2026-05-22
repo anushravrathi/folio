@@ -495,6 +495,159 @@ function LandingContent() {
               </p>
             </div>
           )}
+
+          {/* ── HIGH FIDELITY MOCK FLOATING DECK ── */}
+          <div className="animate-fade-up-delay-4 mt-16 w-full max-w-[950px] relative rounded-[32px] border border-white/10 bg-gradient-to-br from-white/[0.04] to-transparent p-1.5 md:p-2 shadow-[0_50px_100px_rgba(0,0,0,0.8)] backdrop-blur-md overflow-hidden group select-none">
+             {/* Gradient Border Moving Beam */}
+             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent/30 to-transparent -translate-x-full animate-border-shine pointer-events-none"></div>
+             
+             {/* Outer Glass Shell */}
+             <div className="relative rounded-[28px] bg-gradient-to-b from-[#0A0A0A] to-[#040404] p-6 md:p-8 border border-white/5 overflow-hidden">
+                {/* Behind Glow */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-gradient-to-r from-accent/10 to-[#7C6FFF]/10 blur-[80px] rounded-full pointer-events-none"></div>
+
+                {/* Dashboard / Folio Header */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-6 mb-6">
+                   <div className="flex items-center gap-4">
+                      {/* Avatar with dynamic premium ring */}
+                      <div className="relative">
+                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-[#7C6FFF] p-[2px] shadow-glow">
+                            <div className="w-full h-full rounded-full bg-[#111] flex items-center justify-center font-black text-white text-lg">SD</div>
+                         </div>
+                         <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-success border-2 border-[#0B0B0B] animate-pulse"></div>
+                      </div>
+                      <div className="text-left">
+                         <div className="flex items-center gap-2">
+                            <h3 className="text-base sm:text-lg font-black text-white tracking-tight">Sarah Chen</h3>
+                            <span className="inline-flex items-center gap-1 p-0.5 px-2 rounded-full bg-accent/10 border border-accent/20 text-[8px] font-black text-accent uppercase tracking-widest">
+                               PRO MEMBER
+                            </span>
+                         </div>
+                         <p className="text-xs text-tertiary font-bold mt-0.5">Full Stack Engineer & Creative Developer</p>
+                      </div>
+                   </div>
+                   
+                   {/* Callouts */}
+                   <div className="flex flex-wrap gap-2.5">
+                      <div className="p-1 px-3 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] font-bold text-secondary flex items-center gap-1.5 shadow-md">
+                         <span className="w-1.5 h-1.5 rounded-full bg-[#EC4899]"></span> San Francisco, CA
+                      </div>
+                      <div className="p-1 px-3 rounded-xl bg-success/10 border border-success/20 text-[11px] font-bold text-success flex items-center gap-1.5 shadow-md">
+                         ⚡ Open to work
+                      </div>
+                   </div>
+                </div>
+
+                {/* Dashboard Bento Sections */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 text-left">
+                   
+                   {/* Left Col: Projects & Tech */}
+                   <div className="md:col-span-8 space-y-5">
+                      {/* Projects Showcase Container */}
+                      <div className="p-5.5 rounded-2xl bg-white/[0.01] border border-white/5 relative group/card hover:bg-white/[0.02] transition-colors duration-300">
+                         <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] font-extrabold tracking-widest text-[#7C6FFF] uppercase">FEATURED PROJECT</span>
+                            <span className="text-[10px] font-bold text-tertiary flex items-center gap-1 font-mono">active_status: 100%</span>
+                         </div>
+                         <h4 className="text-white font-extrabold text-base mb-1.5 flex items-center gap-2">
+                            AetherFlow AI <ArrowRight className="w-4 h-4 text-accent transition-transform group-hover/card:translate-x-1" />
+                         </h4>
+                         <p className="text-secondary text-xs leading-relaxed font-semibold mb-4">
+                            Vector-based telemetry ingestion layer routing real-time pipeline models through light-speed Edge nodes. Built for developers with raw speed and beautiful dashboards.
+                         </p>
+                         
+                         {/* Project Tags */}
+                         <div className="flex flex-wrap gap-2">
+                            {['Next.js', 'Rust', 'WebGPU', 'Supabase'].map(t => (
+                               <span key={t} className="text-[10px] font-bold text-tertiary p-1 px-2.5 rounded-lg bg-white/[0.03] border border-white/5">{t}</span>
+                            ))}
+                         </div>
+                      </div>
+
+                      {/* Skills Grid */}
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="p-4.5 rounded-2xl bg-white/[0.01] border border-white/5">
+                            <span className="text-[9px] font-extrabold tracking-widest text-[#EC4899] uppercase block mb-2">PRIMARY TOOLING</span>
+                            <div className="space-y-2">
+                               <div className="flex items-center justify-between text-xs font-bold text-secondary">
+                                  <span>React / Next.js</span>
+                                  <span className="text-white">98%</span>
+                               </div>
+                               <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                  <div className="h-full bg-[#EC4899] rounded-full w-[98%] shadow-glow"></div>
+                               </div>
+                            </div>
+                         </div>
+                         <div className="p-4.5 rounded-2xl bg-white/[0.01] border border-white/5">
+                            <span className="text-[9px] font-extrabold tracking-widest text-success uppercase block mb-2">SYSTEM ARCHITECTURE</span>
+                            <div className="space-y-2">
+                               <div className="flex items-center justify-between text-xs font-bold text-secondary">
+                                  <span>Node / Rust / GraphQL</span>
+                                  <span className="text-white">88%</span>
+                               </div>
+                               <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                  <div className="h-full bg-success rounded-full w-[88%] shadow-glow"></div>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Right Col: Spotify & Telemetry Stats */}
+                   <div className="md:col-span-4 space-y-5 flex flex-col justify-between">
+                      {/* Dynamic Live Widget */}
+                      <div className="p-5.5 rounded-2xl bg-white/[0.01] border border-white/5 bg-gradient-to-br from-[#121212]/30 to-transparent">
+                         <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] font-extrabold tracking-widest text-success uppercase flex items-center gap-1.5">
+                               <span className="w-1.5 h-1.5 rounded-full bg-success animate-ping"></span> Live Spotify
+                            </span>
+                            <Music className="w-3.5 h-3.5 text-success" />
+                         </div>
+                         <div className="flex gap-3 items-center">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-success/20 to-success/5 border border-success/25 flex items-center justify-center shrink-0">
+                               <Music className="w-5 h-5 text-success animate-bounce" />
+                            </div>
+                            <div className="min-w-0">
+                               <h5 className="text-white font-extrabold text-xs truncate">Midnight City</h5>
+                               <p className="text-tertiary text-[10px] font-bold truncate mt-0.5">M83 — Hurry Up</p>
+                            </div>
+                         </div>
+                         {/* Waveform visualizer */}
+                         <div className="flex gap-0.5 h-6 items-end mt-4">
+                            {[0.6, 0.4, 0.9, 0.3, 0.8, 0.5, 0.95, 0.4, 0.7, 0.35, 0.8, 0.55].map((h, i) => (
+                               <div 
+                                  key={i} 
+                                  className="flex-1 bg-success/60 rounded-t-[1px] animate-wave" 
+                                  style={{ 
+                                     height: `${h * 100}%`,
+                                     animationDelay: `${i * 90}ms`
+                                  }}
+                               />
+                            ))}
+                         </div>
+                      </div>
+
+                      {/* Verified Analytics Card */}
+                      <div className="p-5.5 rounded-2xl bg-white/[0.01] border border-white/5 flex flex-col justify-between">
+                         <div>
+                            <span className="text-[10px] font-extrabold tracking-widest text-[#F0B429] uppercase block mb-1">AUDIENCE TRAFFIC</span>
+                            <p className="text-tertiary text-[10px] font-bold leading-none mb-3">Live verified clicks & telemetry</p>
+                         </div>
+                         <div className="flex items-baseline gap-1.5 mb-1.5">
+                            <span className="text-2xl font-black text-white font-mono">14,291</span>
+                            <span className="text-xs text-success font-semibold flex items-center gap-0.5">
+                               📈 14.8%
+                            </span>
+                         </div>
+                         <div className="flex items-center gap-1.5 p-1 bg-white/[0.02] border border-white/5 rounded-xl text-[10px] text-tertiary font-bold justify-center mt-2 shadow-inner">
+                            ⚡ Powered by <span className="text-white font-extrabold">Folio Analytics</span>
+                         </div>
+                      </div>
+                   </div>
+
+                </div>
+             </div>
+          </div>
         </section>
 
         {/* ── INTERACTIVE AWWWARDS BENTO GRID (AWESOME SHADCN STYLE) ─────────────────── */}
