@@ -1,0 +1,13 @@
+# This file specifies files and directories that should be ignored when uploading to Google Cloud.
+.gcloudignore
+.git
+.gitignore
+node_modules
+.next
+.agents
+skills-lock.json
+.env.local
+.env.development
+.env.production
+.env.staging
+.env
