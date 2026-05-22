@@ -49,12 +49,12 @@ const FEATURES = [
 ]
 
 const PRO_FEATURES = [
+  "Exclusive PRO Badge on Profile",
   "Remove Folio watermark",
   "Custom domain support",
   "Deep profile analytics",
-  "Resume PDF export (coming soon)",
   "Extra premium themes",
-  "Priority support",
+  "Priority support & setup",
 ]
 
 export default function LandingPage() {
@@ -649,7 +649,7 @@ function LandingContent() {
               </div>
               
               <div className="space-y-4 mb-10 flex-1">
-                {["Full profile customization", "Projects & Experience blocks", "Basic link analytics", "Tryfolio.online subdomain"].map((f, idx) => (
+                {["Full profile customization", "Projects & Experience blocks", "Resume/CV file upload", "Basic link analytics", "Tryfolio.online subdomain"].map((f, idx) => (
                   <div key={idx} className="flex items-center gap-3">
                      <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center shrink-0">
                         <CheckCircle2 className="w-3 h-3 text-tertiary" />
