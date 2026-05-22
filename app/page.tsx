@@ -360,25 +360,56 @@ function LandingContent() {
           
           {/* ── Floating Decoratives ── */}
           {/* Top Left: Tiny Stats UI */}
-          <div className="hidden lg:flex absolute left-0 xl:left-8 top-28 p-3.5 px-4 bg-[#111]/70 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.6)] items-center gap-3 animate-float-slow z-20 pointer-events-none select-none">
-             <div className="p-2 bg-badge-open-bg rounded-xl text-badge-open-fg">
-                <BarChart3 className="w-4.5 h-4.5" />
+          <div className="hidden lg:flex absolute left-0 xl:left-8 top-28 p-3.5 px-4 bg-[#0A0A0A]/85 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] items-center gap-4 animate-float-slow z-20 pointer-events-none select-none hover:border-success/30 transition-all duration-300">
+             <div className="p-2.5 bg-success/10 rounded-xl text-success border border-success/20">
+                <BarChart3 className="w-5 h-5" />
              </div>
              <div className="text-left">
-                <p className="text-[10px] text-tertiary font-bold tracking-widest uppercase">Weekly Views</p>
-                <p className="text-sm font-black text-white">1,429 <span className="text-[10px] text-success font-semibold">+12%</span></p>
+                <p className="text-[9px] text-tertiary font-black tracking-widest uppercase">Weekly Traffic</p>
+                <p className="text-base font-black text-white leading-none mt-0.5">1,429</p>
+                <span className="text-[9px] text-success font-bold flex items-center gap-0.5 mt-1">
+                   📈 +14.2% <span className="text-tertiary font-normal">this week</span>
+                </span>
+             </div>
+             {/* Mini SVG Sparkline */}
+             <div className="w-12 h-8 ml-2">
+                <svg className="w-full h-full" viewBox="0 0 50 20">
+                   <defs>
+                      <linearGradient id="sparkline-grad" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="#34C77B" stopOpacity="0.4"/>
+                         <stop offset="100%" stopColor="#34C77B" stopOpacity="0"/>
+                      </linearGradient>
+                   </defs>
+                   <path
+                      d="M 0 18 Q 10 5, 20 12 T 40 4 T 50 8"
+                      fill="none"
+                      stroke="#34C77B"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                   />
+                   <path
+                      d="M 0 18 Q 10 5, 20 12 T 40 4 T 50 8 L 50 20 L 0 20 Z"
+                      fill="url(#sparkline-grad)"
+                   />
+                </svg>
              </div>
           </div>
 
           {/* Top Right: Small Badge */}
-          <div className="hidden lg:flex absolute right-4 xl:right-12 top-40 p-3 bg-[#111]/70 backdrop-blur-md border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.6)] items-center gap-3 animate-float-medium z-20 pointer-events-none select-none">
-             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-accent to-[#7C6FFF] flex items-center justify-center text-white">
-                <Trophy className="w-4.5 h-4.5" />
+          <div className="hidden lg:flex absolute right-4 xl:right-12 top-40 p-3.5 px-4 bg-[#0A0A0A]/85 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] items-center gap-3.5 animate-float-medium z-20 pointer-events-none select-none hover:border-accent/30 transition-all duration-300">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20 flex items-center justify-center text-accent shadow-glow shrink-0">
+                <Trophy className="w-5 h-5 fill-accent/10" />
              </div>
              <div className="text-left">
-                <p className="text-xs font-bold text-white">Top 5% Developer</p>
-                <div className="flex gap-0.5 mt-0.5">
-                   {[1,2,3,4,5].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-accent" />)}
+                <p className="text-[9px] text-tertiary font-black tracking-widest uppercase">Verified Skillset</p>
+                <p className="text-xs sm:text-sm font-black text-white leading-tight">Top 5% Developer</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                   <div className="flex gap-0.5 text-accent">
+                      {[1,2,3,4,5].map(i => (
+                         <Star key={i} className="w-2.5 h-2.5 fill-accent text-accent" />
+                      ))}
+                   </div>
+                   <span className="text-[9px] text-tertiary font-bold">100% Rank</span>
                 </div>
              </div>
           </div>
@@ -411,17 +442,18 @@ function LandingContent() {
                 alt="Folio - The modern, clickable alternative to boring PDF resumes. | Product Hunt" 
                 width={250} 
                 height={54} 
-                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1153264&theme=light&t=1779444147734" 
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1153264&theme=neutral&t=1779444147734" 
                 className="w-[200px] sm:w-[250px] h-auto rounded-xl border border-white/10 shadow-lg"
               />
             </a>
 
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.02] backdrop-blur-md text-[12px] font-semibold text-secondary hover:bg-white/[0.05] transition-colors cursor-default shadow-lg select-none">
-              <div className="flex -space-x-1.5">
-                 <div className="w-5 h-5 rounded-full border border-page bg-accent text-[8px] flex items-center justify-center text-white font-black">F</div>
-                 <div className="w-5 h-5 rounded-full border border-page bg-success text-[8px] flex items-center justify-center text-white font-black">O</div>
+              <div className="flex -space-x-2">
+                 <div className="w-6 h-6 rounded-full border-2 border-[#080808] bg-gradient-to-br from-accent to-[#7C6FFF] flex items-center justify-center text-[8px] text-white font-black shadow-md">A</div>
+                 <div className="w-6 h-6 rounded-full border-2 border-[#080808] bg-gradient-to-br from-success to-emerald-600 flex items-center justify-center text-[8px] text-white font-black shadow-md">K</div>
+                 <div className="w-6 h-6 rounded-full border-2 border-[#080808] bg-gradient-to-br from-warning to-amber-600 flex items-center justify-center text-[8px] text-white font-black shadow-md">S</div>
               </div>
-              <span>Empowering <span className="text-white font-bold">2.8k+</span> ambitious creators</span>
+              <span>Empowering <span className="text-white font-bold">2,840+</span> ambitious developers</span>
               <div className="h-3 w-px bg-white/20 mx-1"></div>
               <span className="text-accent flex items-center gap-0.5 font-extrabold hover:underline">Get Started <ArrowRight className="w-3 h-3 stroke-[2.5]" /></span>
             </div>
@@ -431,7 +463,7 @@ function LandingContent() {
             Stop sending boring <br className="hidden sm:block" /> 
             <span className="relative inline-block text-white px-2">
                PDF Resumes.
-               <div className="absolute -inset-1 bg-gradient-to-r from-accent/20 to-[#7C6FFF]/20 blur-md rounded-xl z-[-1]"></div>
+               <div className="absolute -inset-2 bg-gradient-to-r from-accent to-[#7C6FFF] opacity-25 blur-xl rounded-xl z-[-1] animate-[pulse-glow_4s_ease-in-out_infinite]"></div>
                <div className="absolute bottom-1.5 left-0 w-full h-[6px] bg-accent/40 rounded-full z-[-1]"></div>
             </span>
             <br className="hidden sm:block" />
@@ -463,32 +495,32 @@ function LandingContent() {
             </div>
           ) : (
             <div className="animate-fade-up-delay-3 w-full max-w-[480px] relative z-20 group">
-              <div className="absolute -inset-1.5 bg-gradient-to-r from-accent via-[#7C6FFF] to-[#34C77B] rounded-[24px] opacity-20 group-hover:opacity-35 blur-2xl transition-opacity duration-500"></div>
-              <div className="relative flex items-center p-1.5 sm:p-2 rounded-2xl border border-white/15 bg-[#0F0F0F] shadow-2xl backdrop-blur-xl">
-                <div className="pl-4 sm:pl-5 text-secondary/60 text-[14px] font-bold tracking-wide pointer-events-none select-none hidden sm:block">
-                  tryfolio.online/
-                </div>
-                <div className="pl-4 text-secondary/60 text-xs font-bold sm:hidden">tryfolio/</div>
-                <div className="flex-1 relative min-w-0">
-                  <input
-                    type="text"
-                    placeholder="username"
-                    value={claimUsername}
-                    onChange={(e) => handleClaimInput(e.target.value)}
-                    className="pl-1 pr-8 h-12 sm:h-14 text-[15px] font-bold bg-transparent border-0 shadow-none text-white focus:ring-0 focus:outline-none placeholder:opacity-30 w-full"
-                  />
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                    {checking && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
-                    {!checking && available === true && <Check className="w-4 h-4 text-success" />}
-                    {!checking && available === false && claimUsername.length >= 3 && <X className="w-4 h-4 text-red-500" />}
-                  </div>
-                </div>
-                <Link
-                  href={claimUsername.length >= 3 ? `/signup?username=${encodeURIComponent(claimUsername)}` : '/signup'}
-                  className="h-11 sm:h-12 px-5 sm:px-7 rounded-xl font-extrabold text-[14px] flex items-center justify-center gap-1.5 shrink-0 shadow-lg bg-white text-black hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all border-0 cursor-pointer"
-                >
-                  Claim URL <ArrowRight className="w-4 h-4 stroke-[3]" />
-                </Link>
+              <div className="absolute -inset-1.5 bg-gradient-to-r from-accent via-[#7C6FFF] to-[#34C77B] rounded-[24px] opacity-15 group-hover:opacity-30 group-focus-within:opacity-40 blur-2xl transition-opacity duration-500"></div>
+              <div className="relative flex items-center p-1.5 sm:p-2 rounded-2xl border border-white/15 focus-within:border-accent/40 bg-[#0F0F0F] shadow-2xl backdrop-blur-xl focus-within:shadow-[0_0_50px_rgba(124,111,255,0.15)] transition-all duration-500">
+                 <div className="pl-4 sm:pl-5 text-secondary/60 text-[14px] font-bold tracking-wide pointer-events-none select-none hidden sm:block">
+                   tryfolio.online/
+                 </div>
+                 <div className="pl-4 text-secondary/60 text-xs font-bold sm:hidden">tryfolio/</div>
+                 <div className="flex-1 relative min-w-0">
+                   <input
+                     type="text"
+                     placeholder="username"
+                     value={claimUsername}
+                     onChange={(e) => handleClaimInput(e.target.value)}
+                     className="pl-1 pr-8 h-12 sm:h-14 text-[15px] font-bold bg-transparent border-0 shadow-none text-white focus:ring-0 focus:outline-none placeholder:opacity-30 w-full"
+                   />
+                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                     {checking && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
+                     {!checking && available === true && <Check className="w-4 h-4 text-success" />}
+                     {!checking && available === false && claimUsername.length >= 3 && <X className="w-4 h-4 text-red-500" />}
+                   </div>
+                 </div>
+                 <Link
+                   href={claimUsername.length >= 3 ? `/signup?username=${encodeURIComponent(claimUsername)}` : '/signup'}
+                   className="h-11 sm:h-12 px-5 sm:px-7 rounded-xl font-extrabold text-[14px] flex items-center justify-center gap-1.5 shrink-0 shadow-lg bg-white text-black hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all border-0 cursor-pointer"
+                 >
+                   Claim URL <ArrowRight className="w-4 h-4 stroke-[3]" />
+                 </Link>
               </div>
               <p className="mt-3 text-[12px] text-tertiary font-semibold select-none">
                  {available === true && claimUsername ? <span className="text-success">✓ tryfolio.online/{claimUsername} is available!</span> : '⚡ Instant claim. Fully free.'}
