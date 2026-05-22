@@ -387,15 +387,34 @@ function LandingContent() {
           </div>
 
           {/* ── Center Content ── */}
-          <div className="animate-fade-up mb-10 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur-md text-[13px] font-medium text-secondary hover:bg-white/[0.06] transition-colors cursor-default shadow-inner">
-            <div className="flex -space-x-1.5">
-               <div className="w-5 h-5 rounded-full border border-page bg-accent text-[8px] flex items-center justify-center text-white font-bold">A</div>
-               <div className="w-5 h-5 rounded-full border border-page bg-success text-[8px] flex items-center justify-center text-white font-bold">B</div>
+          <div className="animate-fade-up mb-8 flex flex-col items-center gap-4">
+            {/* Product Hunt Badge */}
+            <a 
+              href="https://www.producthunt.com/products/folio-00182bb5-5d5e-4f15-bb29-c41d044ce434?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-folio-13" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-block transition-transform duration-200 hover:scale-[1.02] active:scale-95"
+            >
+              <img 
+                alt="Folio - The modern, clickable alternative to boring PDF resumes. | Product Hunt" 
+                width={250} 
+                height={54} 
+                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1153264&theme=light&t=1779444147734" 
+                className="w-[200px] sm:w-[250px] h-auto rounded-lg border border-white/5 shadow-md"
+              />
+            </a>
+
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur-md text-[13px] font-medium text-secondary hover:bg-white/[0.06] transition-colors cursor-default shadow-inner">
+              <div className="flex -space-x-1.5">
+                 <div className="w-5 h-5 rounded-full border border-page bg-accent text-[8px] flex items-center justify-center text-white font-bold">A</div>
+                 <div className="w-5 h-5 rounded-full border border-page bg-success text-[8px] flex items-center justify-center text-white font-bold">B</div>
+              </div>
+              <span>Join <span className="text-white font-semibold">2.8k+</span> ambitious developers</span>
+              <div className="h-3 w-px bg-white/20 mx-1"></div>
+              <span className="text-accent flex items-center gap-0.5 font-bold">Get Started <ArrowRight className="w-3 h-3" /></span>
             </div>
-            <span>Join <span className="text-white font-semibold">2.8k+</span> ambitious developers</span>
-            <div className="h-3 w-px bg-white/20 mx-1"></div>
-            <span className="text-accent flex items-center gap-0.5 font-bold">Get Started <ArrowRight className="w-3 h-3" /></span>
           </div>
+
 
           <h1 className="animate-fade-up-delay-1 mb-8 max-w-[900px] text-[44px] sm:text-[60px] md:text-[76px] font-extrabold tracking-tight text-white leading-[1.05] relative">
             Stop sending boring <br className="hidden sm:block" /> 
