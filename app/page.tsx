@@ -317,6 +317,17 @@ function LandingContent() {
             >
               Pricing
             </Link>
+            <a
+              href="https://www.x.com/tryfolioonline"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-white transition-colors"
+            >
+              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              Follow Us
+            </a>
             <div className="flex items-center gap-3">
               {user ? (
                 <Link href={hasProfile ? "/dashboard" : "/onboarding"}>
@@ -811,6 +822,17 @@ function LandingContent() {
                    >
                       Email Support
                       <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                   </a>
+                   <a 
+                      href="https://www.x.com/tryfolioonline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 hover:border-white/20 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md cursor-pointer"
+                   >
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                      Follow @tryfolioonline
                    </a>
                    <div className="text-center pt-0.5">
                       <span className="text-[11px] font-mono text-tertiary select-all cursor-pointer hover:text-secondary transition-colors">
