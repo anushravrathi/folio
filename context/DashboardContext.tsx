@@ -25,7 +25,7 @@ interface DashboardConfig {
   username?: string
   isPro?: boolean
   isDeployed?: boolean
-  theme: 'default' | 'emerald' | 'sunset' | 'rose' | 'playful'
+  theme: 'default' | 'dark' | 'emerald' | 'sunset' | 'rose' | 'playful' | 'light'
   name: string
   title: string
   location: string

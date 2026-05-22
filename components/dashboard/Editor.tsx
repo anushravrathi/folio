@@ -14,7 +14,7 @@ export function Editor() {
 
   const tabs = [
     { id: "page", label: "Content", icon: Layout },
-    { id: "style", label: "Style", icon: Palette },
+    { id: "style", label: "Themes", icon: Palette },
     { id: "stats", label: "Analytics", icon: BarChart2 },
     { id: "settings", label: "Settings", icon: Settings },
   ] as const

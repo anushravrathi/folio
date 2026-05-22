@@ -8,11 +8,9 @@ export function StyleTab() {
   const { config, updateConfig } = useDashboardContext()
   
   const themes = [
-    { id: "default" as const, name: "Vapor Purple", color: "#6C63FF", secondary: "#3B82F6", desc: "Dark Mode Mesh" },
-    { id: "emerald" as const, name: "Emerald Coast", color: "#10B981", secondary: "#064E3B", desc: "Dark Mode Mesh" },
-    { id: "sunset" as const, name: "Solar Sunset", color: "#F59E0B", secondary: "#9D174D", desc: "Dark Mode Mesh" },
-    { id: "rose" as const, name: "Rose Velvet", color: "#E11D48", secondary: "#4C0519", desc: "Dark Mode Mesh" },
-    { id: "playful" as const, name: "Playful Parchment", color: "#6366F1", secondary: "#EC4899", desc: "Playful Light Theme" },
+    { id: "emerald" as const, name: "Dark", color: "#10B981", secondary: "#064E3B", desc: "Emerald Coast Dark Theme" },
+    { id: "light" as const, name: "Light", color: "#4F46E5", secondary: "#3B82F6", desc: "Crisp & Modern Light Theme" },
+    { id: "playful" as const, name: "Playful", color: "#6366F1", secondary: "#EC4899", desc: "Playful Parchment Theme" },
   ]
 
   return (
@@ -24,10 +22,11 @@ export function StyleTab() {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
              {themes.map((t) => {
-               const isSelected = config.theme === t.id
+               const isSelected = config.theme === t.id || (t.id === 'emerald' && (config.theme === 'default' || config.theme === 'dark'))
                return (
                  <button
                    key={t.id}
+                   type="button"
                    onClick={() => updateConfig({ theme: t.id })}
                    className={`flex flex-col p-4 rounded-2xl border-2 transition-all overflow-hidden relative group text-left ${
                      isSelected ? 'border-white/20 bg-white/5' : 'border-white/5 bg-[#111] hover:border-white/10'
@@ -59,23 +58,12 @@ export function StyleTab() {
                )
              })}
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border-subtle bg-surface/30">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-[15px] text-white">Typography</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <button className="flex flex-col items-center justify-center p-6 rounded-xl border border-white/20 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
-              <span className="text-3xl font-sans mb-2 text-white">Aa</span>
-              <span className="text-sm font-medium text-white">Outfit</span>
-            </button>
-            <button className="flex flex-col items-center justify-center p-6 rounded-xl border border-white/5 bg-[#111] cursor-pointer hover:border-white/10 transition-colors">
-              <span className="text-3xl font-sans mb-2 text-white opacity-80">Aa</span>
-              <span className="text-sm font-medium text-tertiary">Inter</span>
-            </button>
+          
+          {/* Note indicating more themes coming soon */}
+          <div className="mt-6 text-center border-t border-white/5 pt-4">
+             <p className="text-xs text-tertiary font-medium">
+               ✨ More themes coming soon in upcoming updates.
+             </p>
           </div>
         </CardContent>
       </Card>

@@ -93,9 +93,33 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
     ...(activeTheme.badgeDiscFg && { '--color-badge-disc-fg': activeTheme.badgeDiscFg }),
   } as any; // cast to any to allow custom CSS vars
 
+  // Generate dynamic JSON-LD structured data for Google Search Profile Schema
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "mainEntity": {
+      "@type": "Person",
+      "name": profile.full_name || username,
+      "jobTitle": profile.title || "Developer",
+      "description": profile.about || `${profile.full_name || username}'s professional profile on Folio`,
+      "image": profile.avatar_url || undefined,
+      "sameAs": [
+        profile.social_links?.github ? `https://github.com/${profile.social_links.github}` : null,
+        profile.social_links?.linkedin ? `https://linkedin.com/in/${profile.social_links.linkedin}` : null,
+        profile.social_links?.twitter ? `https://twitter.com/${profile.social_links.twitter}` : null,
+        profile.social_links?.website || null,
+      ].filter(Boolean)
+    }
+  };
+
   return (
     <div style={styleVars} className="min-h-screen bg-page text-primary font-sans transition-colors duration-300">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <ProfilePage profile={profile} />
     </div>
   );
 }
+
