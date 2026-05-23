@@ -199,7 +199,7 @@ function LoginContent() {
               <div className="space-y-2">
                 <label htmlFor="password" className="text-sm font-medium text-secondary flex justify-between">
                   <span>Password</span>
-                  <Link href="#" className="text-accent hover:underline text-xs">Forgot?</Link>
+                  <Link href="/forgot-password" className="text-accent hover:underline text-xs">Forgot?</Link>
                 </label>
                 <Input 
                   id="password" 

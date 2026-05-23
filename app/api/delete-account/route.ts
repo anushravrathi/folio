@@ -18,38 +18,27 @@ export async function POST(req: Request) {
 
     console.log(`Starting account deletion for userId: ${userId}`);
 
-    // Delete dependent records
-    const tables = [
-      'skills',
-      'projects',
-      'experience',
-      'social_links',
-      'page_views',
-      'link_clicks',
-      'profile_shares'
-    ];
+    // Delete dependent records explicitly to resolve foreign key constraints cleanly
+    const tableFieldMap: Record<string, string> = {
+      'skills': 'profile_id',
+      'projects': 'profile_id',
+      'experience': 'profile_id',
+      'social_links': 'id',
+      'page_views': 'profile_id',
+      'link_clicks': 'profile_id',
+      'profile_shares': 'profile_id'
+    };
 
-    for (const table of tables) {
+    for (const table of Object.keys(tableFieldMap)) {
       try {
-        const { error } = await supabaseAdmin.from(table).delete().eq(table === 'skills' || table === 'projects' || table === 'experience' ? 'profile_id' : 'id', userId);
+        const queryField = tableFieldMap[table];
+        const { error } = await supabaseAdmin
+          .from(table)
+          .delete()
+          .eq(queryField, userId);
+
         if (error) {
-          // Some tables might have 'id' instead of 'profile_id' or 'profile_id' instead of 'id'. Let's try both or just be specific.
-          // Wait! In save-config:
-          // skills: profile_id
-          // experience: profile_id
-          // projects: profile_id
-          // social_links: id (as in upsert({ id: userId, ... }))
-          // page_views: profile_id
-          // link_clicks: profile_id
-          // profile_shares: profile_id
-          let queryField = 'profile_id';
-          if (table === 'social_links') {
-            queryField = 'id';
-          }
-          const { error: retryError } = await supabaseAdmin.from(table).delete().eq(queryField, userId);
-          if (retryError) {
-            console.error(`Error deleting from ${table}:`, retryError.message);
-          }
+          console.error(`Error deleting from ${table}:`, error.message);
         }
       } catch (err: any) {
         console.error(`Exception deleting from ${table}:`, err.message);
