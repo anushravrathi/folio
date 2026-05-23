@@ -37,10 +37,41 @@ export async function GET(req: Request) {
 
     if (recentError) throw recentError
 
+    // 4. Fetch Pro Users
+    const { data: proProfiles, error: proError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, username, full_name, email, created_at')
+      .eq('is_pro', true)
+      .order('created_at', { ascending: false })
+
+    if (proError) throw proError
+
+    const emailMap: Record<string, string> = {}
+    try {
+      const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers()
+      if (!usersError && users) {
+        users.forEach((u) => {
+          if (u.id && u.email) {
+            emailMap[u.id] = u.email
+          }
+        })
+      }
+    } catch (e) {
+      console.error('Failed to list auth users in admin stats:', e)
+    }
+
+    const proUsers = (proProfiles || []).map((p) => ({
+      username: p.username,
+      full_name: p.full_name,
+      email: p.email || emailMap[p.id] || 'no-email@tryfolio.online',
+      created_at: p.created_at,
+    }))
+
     return NextResponse.json({
       total_profiles: profilesCount || 0,
       total_views: viewsCount || 0,
       recent_profiles: recentProfiles || [],
+      pro_users: proUsers,
     })
   } catch (err: any) {
     console.error('Launch stats API error:', err)

@@ -15,10 +15,18 @@ interface RecentProfile {
   created_at: string
 }
 
+interface ProUser {
+  username: string
+  full_name: string | null
+  email: string
+  created_at: string
+}
+
 interface StatsData {
   total_profiles: number
   total_views: number
   recent_profiles: RecentProfile[]
+  pro_users: ProUser[]
 }
 
 export default function LaunchAdminPage() {
@@ -42,6 +50,8 @@ function LaunchAdminContent() {
   const [loading, setLoading] = useState(true)
   const [pollingActive, setPollingActive] = useState(true)
   const [copiedText, setCopiedText] = useState(false)
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null)
+  const [copiedAll, setCopiedAll] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
   const fetchStats = async (isManual = false) => {
@@ -90,6 +100,20 @@ function LaunchAdminContent() {
     navigator.clipboard.writeText(text)
     setCopiedText(true)
     setTimeout(() => setCopiedText(false), 2000)
+  }
+
+  const copyIndividualEmail = (email: string) => {
+    navigator.clipboard.writeText(email)
+    setCopiedEmail(email)
+    setTimeout(() => setCopiedEmail(null), 2000)
+  }
+
+  const copyAllProEmails = (emails: string[]) => {
+    if (emails.length === 0) return
+    const uniqueEmails = Array.from(new Set(emails.filter(Boolean)))
+    navigator.clipboard.writeText(uniqueEmails.join(', '))
+    setCopiedAll(true)
+    setTimeout(() => setCopiedAll(false), 2000)
   }
 
   const formatRelativeTime = (dateStr: string) => {
@@ -317,6 +341,98 @@ function LaunchAdminContent() {
                   Waiting for signups... They will appear here instantly!
                 </div>
               )}
+            </div>
+
+            {/* Card 2: Pro Members Command Center */}
+            <div className="space-y-6 pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-md font-bold text-white tracking-tight flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse"></span>
+                  Pro Members Command Center
+                  {data?.pro_users && data.pro_users.length > 0 && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-[10px] font-black tracking-wider uppercase ml-1">
+                      {data.pro_users.length} UPGRADED
+                    </span>
+                  )}
+                </h3>
+                
+                {data?.pro_users && data.pro_users.length > 0 && (
+                  <Button
+                    onClick={() => copyAllProEmails(data.pro_users.map(u => u.email))}
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-xl border border-accent/20 bg-accent/5 hover:bg-accent/10 text-accent h-8 px-3 text-xs font-bold transition-all"
+                  >
+                    {copiedAll ? (
+                      <><Check className="w-3.5 h-3.5 mr-1 text-success" /> All Copied!</>
+                    ) : (
+                      <><Copy className="w-3.5 h-3.5 mr-1" /> Copy All Pro Emails</>
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              <div className="border border-white/5 rounded-3xl overflow-hidden bg-[#0A0A0A] shadow-xl relative">
+                {/* Glow accent */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent"></div>
+
+                {data?.pro_users && data.pro_users.length > 0 ? (
+                  <div className="divide-y divide-white/5">
+                    {data.pro_users.map((p, index) => {
+                      const profileName = p.full_name || p.username
+                      return (
+                        <div key={p.username || index} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.01] transition-all">
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/15 flex items-center justify-center text-accent font-black text-xs shrink-0 overflow-hidden">
+                              👑
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-white truncate">{profileName}</h4>
+                                <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent font-bold text-[9px] uppercase tracking-wider">Pro</span>
+                              </div>
+                              <p className="text-xs text-tertiary font-medium mt-0.5 truncate flex items-center gap-1.5 flex-wrap">
+                                <span className="text-secondary">tryfolio.online/{p.username}</span>
+                                <span className="text-white/10">•</span>
+                                <span className="text-[#888] font-mono text-[11px] select-all bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{p.email}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                            <Button
+                              onClick={() => copyIndividualEmail(p.email)}
+                              variant="ghost"
+                              className="h-8 px-3 rounded-lg bg-white/5 border border-white/5 text-[11px] font-bold text-secondary hover:text-white hover:bg-white/10 flex items-center gap-1.5"
+                              title="Copy Email"
+                            >
+                              {copiedEmail === p.email ? (
+                                <><Check className="w-3 h-3 text-success" /> Copied</>
+                              ) : (
+                                <><Copy className="w-3 h-3" /> Copy Email</>
+                              )}
+                            </Button>
+                            <a
+                              href={`/${p.username}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-secondary hover:text-white hover:bg-white/10 transition-colors"
+                              title="Open Profile Page"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-12 text-center text-secondary font-medium flex flex-col items-center justify-center gap-2">
+                    <span className="text-xl">✨</span>
+                    <p className="text-sm font-bold text-white">No Pro Members upgraded yet</p>
+                    <p className="text-xs text-tertiary max-w-[280px] mx-auto mt-0.5">When users upgrade using the checkout buttons, they will be listed here instantly with their verified contact emails.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
