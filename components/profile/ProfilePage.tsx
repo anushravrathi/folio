@@ -282,17 +282,35 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
              <h1 className="text-4xl @md:text-5xl font-black text-primary tracking-tight flex items-center justify-center gap-2.5 flex-wrap">
                {name}
                {isPro && (
-                 <span 
-                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-gradient-to-r from-amber-500/10 via-[var(--color-accent)]/15 to-[#7C6FFF]/10 text-white border border-amber-500/30 shadow-[0_0_15px_rgba(240,180,41,0.15)] select-none hover:scale-105 hover:border-amber-400/50 transition-all duration-300 cursor-default animate-fade-in relative overflow-hidden group"
-                   title="Verified Folio Pro Member"
-                 >
-                   <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-border-shine pointer-events-none"></span>
-                   <svg className="w-3.5 h-3.5 text-amber-400 fill-amber-400/30 animate-[pulse_2s_infinite]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                   </svg>
-                   <span className="bg-gradient-to-r from-white via-white to-amber-200 bg-clip-text text-transparent">Pro</span>
-                 </span>
-               )}
+                  <span 
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-default animate-fade-in relative overflow-hidden group select-none hover:scale-105 ${
+                      activeTheme.isLight 
+                        ? "bg-gradient-to-r from-amber-100 via-amber-50 to-purple-100 text-amber-800 border border-amber-500/40 shadow-[0_2px_10px_rgba(217,119,6,0.15)] hover:border-amber-500/70" 
+                        : "bg-gradient-to-r from-amber-500/10 via-[var(--color-accent)]/15 to-[#7C6FFF]/10 text-white border border-amber-500/30 shadow-[0_0_15px_rgba(240,180,41,0.15)] hover:border-amber-400/50"
+                    }`}
+                    title="Verified Folio Pro Member"
+                  >
+                    <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-border-shine pointer-events-none"></span>
+                    <svg 
+                      className={`w-3.5 h-3.5 animate-[pulse_2s_infinite] ${
+                        activeTheme.isLight ? "text-amber-600 fill-amber-500/20" : "text-amber-400 fill-amber-400/30"
+                      }`} 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2.5"
+                    >
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span className={
+                      activeTheme.isLight 
+                        ? "bg-gradient-to-r from-amber-800 to-amber-900 bg-clip-text text-transparent font-extrabold" 
+                        : "bg-gradient-to-r from-white via-white to-amber-200 bg-clip-text text-transparent"
+                    }>
+                      Pro
+                    </span>
+                  </span>
+                )}
              </h1>
              <p className="text-sm sm:text-base text-secondary font-medium max-w-[600px] mx-auto leading-relaxed">
                {bio}
