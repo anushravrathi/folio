@@ -9,6 +9,7 @@ import { ProjectCard } from "./ProjectCard"
 import { SocialIcons } from "@/lib/icons"
 import { SpotifyWidget } from "./SpotifyWidget"
 import { LeetcodeWidget } from "./LeetcodeWidget"
+import { MediumWidget } from "./MediumWidget"
 import { Button } from "@/components/ui/Button"
 import { themeMap } from "@/lib/themes";
 
@@ -533,6 +534,10 @@ export function ProfilePage({ config, profile }: ProfilePageProps) {
           <div className="flex flex-col gap-6">
              {leetcodeUsername && (
                 <LeetcodeWidget username={leetcodeUsername} />
+             )}
+
+             {(username.toLowerCase().includes("anushrav") || username.toLowerCase() === "admin" || process.env.NODE_ENV === "development") && (
+                <MediumWidget onClick={() => handleSocialClick('medium')} />
              )}
 
              {spotify && (
